@@ -1,0 +1,2913 @@
+    //Modified April-7-2020, Ulsan, Korea
+    #include <Wire.h>
+    #include "CommandHandler.h"
+    #include "TimeLib.h"  
+    #include "MegunoLink.h"
+    Message MyCSVMessage("Data");
+    #include <DallasTemperature.h>
+    #define ONE_WIRE_BUS 37
+    OneWire oneWire(ONE_WIRE_BUS);
+    DallasTemperature sensors(&oneWire);
+    float Celcius=0;
+    float Fahrenheit=0;
+
+    int flowPin = 28;    //This is the input pin on the Arduino
+    double flowRate;    //This is the value we intend to calculate. 
+    float count;
+    //RTC code**************************
+    #include <DS1307.h>
+    #define updata_flag 0 //1 updata time,0 only show time
+     //Modify the following data
+    #define TIME_YR    19
+    #define TIME_MTH   10
+    #define TIME_DATE  4
+    #define TIME_DOW   5
+    #define TIME_HR    8
+    #define TIME_MIN   43
+    #define TIME_SEC   0
+     char* str[]={"Mon","Tues","Wed","Thur","Fri","Sat","Sun"};//week
+     int rtc[7];
+    //********************************
+    
+    //LCD Code**********************
+   /* #include "DFRobot_RGBLCD.h"
+    int r;
+    int g;
+    int b;
+    int t=0;
+   FRobot_RGBLCD lcd(24,3);  //16 characters and 2 lines of show
+   */
+    //*************************
+ 
+
+    
+    float ODMAX = 50;
+    float ODMIN = 700;
+    float ODVarT1;
+    float ODVarT2;
+    float ODVarT3;
+    float ODVarT4=0;
+    float ODVarT5=0;
+    float ODVarT6=0;
+    float ODVarT7;
+    float UVOFF;
+    float FEDWASTEVAR1;
+    float FEDWASTEVAR2;
+    float Initialfeed;
+    float ODMINLOOP;
+    float feedspeedcont1;
+    float feedspeedcont2;
+    float Conttimestopinterval2;
+    float Conttimestopinterval3;
+    float VolumerestMIN3;
+    float VolumerestMIN4;
+    float VolumerestHR4;
+    float VolumerestHR5;
+    float OFFLOOPINTVAR;
+    float ONLOOPINTVAR;
+    float REVLOOPINTVAR;
+    float samamountVAR;
+    float samcleaningVAR;
+    float samamountVAR2;
+    float samcleaningVAR2;
+    float Stirvar=50;
+    float temperaturesetvar=37;
+    float temperaturesetlowvar;
+    float Waterbathpumpvar=20;
+    float temperatureactualvar;
+    float Multiplyvar=0.7;
+    //this for the stacking give variable to the motors 
+    float MotorV1;
+    float MotorV2;
+    float MotorV3;
+    float MotorV4;
+    float rpmfeedvar=24;
+    float PUMPONmlVar;
+    float PUMPONmlVar2;
+    float rpmfeedvar2;
+    float PUMPONmlhr2;
+    float PUMPONmlhr3;
+    float Multiplyvar1;
+    float timewastework;
+    float timefeedwork;
+    float timefeedinminvar;
+    float timewasteinminvar;
+    float PUMPONVstand;
+    float airpumpspvar;
+    float airflowsetvar;
+    float airflowactualvar;
+    float bottlepressuresetvar;
+    float bottlepressureactualvar0= analogRead (A8);
+    float bottlepressureposiactualvar0= analogRead (A9);
+    float bottlepressureactualvar;
+    float bottlepressureposiactualvar;
+    //This for small reactor combination system variables;
+
+
+    //-------------Combination system variables-------------------
+    
+    float PuOFFCombVar1;
+    float PuONCombVar1=0;
+    float PuSpeedCombVar1;
+    float PuOFFCombVar2;
+    float PuONCombVar2=0;
+    float PuSpeedCombVar2;
+    float PuOFFCombVar3;
+    float PuONCombVar3=0;
+    float PuSpeedCombVar3;
+    float PuOFFCombVar4;
+    float PuONCombVar4=0;
+    float PuSpeedCombVar4;
+
+    float PuONCombminVar1= (PuONCombVar1/60);
+    float PuONCombminVar2= (PuONCombVar2/60);
+    float PuONCombminVar3= (PuONCombVar3/60);
+    float PuONCombminVar4= (PuONCombVar4/60);
+
+
+float PuONCombmlVar1=0;
+float PuONCombmlVar2=0;
+float PuONCombmlVar3=0;
+float PuONCombmlVar4=0;
+
+float Allcombvalue = PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4; 
+
+    //------------------------------------------------
+
+
+    
+    float WAterbathlevel;
+    float calfeedinmlvar;
+    float calwasteinmlvar;
+
+
+ 
+
+ //-------Calibration variables-------------------
+    float calfeed1minmlval= 33.3;
+    float calfeed2minmlval= 33.3;
+    float calwaste1minmlval= 38.2;
+    float calwaste2minmlval= 38.2;
+    float calloop1minmlval= 36;
+    float calloop2minmlval= 40;
+    float calcomb1minmlval=43;
+    float calcomb2minmlval=43;
+    float calcomb3minmlval=44;
+    float calcomb4minmlval=44;
+
+
+    float calfeed1secmlval= 16.6;
+    float calfeed2secmlval= 16.6;
+    float calwaste1secmlval= 19.1;
+    float calwaste2secmlval= 19.1;
+    float calloop1secmlval= 18;
+    float calloop2secmlval= 20;
+    float calcomb1secmlval=21.5;
+    float calcomb2secmlval=21.5;
+    float calcomb3secmlval=22;
+    float calcomb4secmlval=22;
+
+    float calfeed1ratioval= (calfeed1minmlval)/ (calfeed1secmlval);
+    float calfeed2ratioval= (calfeed2minmlval)/ (calfeed2secmlval) ;
+    float calwaste1ratioval= (calwaste1minmlval)/ (calwaste1secmlval);
+    float calwaste2ratioval= (calwaste2minmlval)/ (calwaste2secmlval);
+    float calloop1ratioval= (calloop1minmlval)/ (calloop1secmlval);
+    float calloop2ratioval= (calloop2minmlval)/ (calloop2secmlval);
+    float calcomb1ratioval= (calcomb1minmlval)/ (calcomb1secmlval);
+    float calcomb2ratioval= (calcomb2minmlval)/ (calcomb2minmlval);
+    float calcomb3ratioval= (calcomb3minmlval)/ (calcomb3secmlval);
+    float calcomb4ratioval= (calcomb4minmlval)/(calcomb4secmlval);
+
+    float calfeed1n2ratioval= (calfeed1minmlval)/ (calfeed2minmlval);
+    float calwaste1n2ratioval= (calwaste1minmlval)/ (calwaste2minmlval);
+    float calfeed1wasteratioval= (calfeed1minmlval)/ (calwaste1minmlval);
+    float calfeed2wasteratioval= (calfeed2minmlval)/(calwaste2minmlval);
+
+    float Yvarusedml;
+    float Yvarusedmin;
+    float averagefeed1n2= ((calfeed1minmlval + calfeed2minmlval)/2);
+//---------------------------------------------
+    unsigned long Timediff1;
+    unsigned long Timediff2;
+    float Timediff3;
+    float addPumpOFF;
+    float PulseUVNow;
+    float readuvOFF;
+    float readuvOFF2;
+    long Varday = 86400000; // 86400000 milliseconds in a day
+    long Varhour = 3600000; // 3600000 milliseconds in an hour
+    long Varminute = 60000; // 60000 milliseconds in a minute
+    long Varsecond =  1000; // 1000 milliseconds in a second
+
+    float TimeVarT2 = millis();
+    float ODVarT9=0;
+    float ProcessStatus =0;
+    int CurrentOD =  analogRead(A0);
+    /*int CurrentOD1= analogRead(A1);
+    int CurrentOD2= analogRead(A2);
+    int CurrentOD3= analogRead(A3);
+
+      unsigned long curOD1OD2= CurrentOD - CurrentOD1;
+      unsigned long curOD3OD4= CurrentOD2 - CurrentOD3;
+      unsigned long curOD1OD3= CurrentOD - CurrentOD2;
+      unsigned long curdiffOD1OD3= curOD1OD2 - curOD3OD4;*/
+
+//=======combination sys cal ml===========
+
+float PuONCombmltominVar1 =(PuONCombmlVar1/calcomb1minmlval);
+float PuONCombmltominVar2 =(PuONCombmlVar2/calcomb2minmlval);
+float PuONCombmltominVar3 =(PuONCombmlVar3/calcomb3minmlval);
+float PuONCombmltominVar4 =(PuONCombmlVar4/calcomb4minmlval);
+
+//======================================
+
+
+
+
+
+
+
+
+
+            
+    unsigned long EmptyODval= 600;
+    unsigned long RealOD= -log(CurrentOD/EmptyODval);
+    float UVMUT;
+    float FLOWINMAX = 100;
+    float FLOWINMIN = 250;
+    float FLOWADDIN = 50;
+    float PUMPONV = 0.2;
+    float PUMPONV3 = ((PUMPONV)/60);
+    double PUMPONV2 = (0.5*(PUMPONV));
+    float PUMPOFFV = 10;
+    float PUMPOFFVhr = 1;
+    float PUMPOFFVmin = ((PUMPOFFVhr)/60);
+    float PUMPOFFVall = (PUMPOFFVmin+PUMPOFFV);
+
+    
+    float ODREADSS = 0;
+    int Automaticcond1= 4;
+    float ODVarT8;
+    unsigned long previousMillis = 0;
+    unsigned long previousMillis2 = 0;
+    unsigned long previousMillis3 = 0;
+    unsigned long previousMillis4 = 0;
+    unsigned long previousMillis5 = 0;
+    unsigned long previousMillis6 = 0;
+    unsigned long previousMillis8 = 0;
+    unsigned long previousMillis9 = 0;
+    unsigned long previousMillistemp = 0;
+    unsigned long previousMillistemp2 = 0;
+    unsigned long previousMillisflowsens=0;
+    unsigned long previousMillisLOOP1 = 0;
+    unsigned long previousMillisLOOP2 = 0;
+    unsigned long previousMillisSampl = 0;
+    unsigned long previousMilliscombination = 0;
+    unsigned long previousMilliscombination1 = 0;
+    unsigned long previousMilliscombination2 = 0;
+    unsigned long previousMilliscombination3 = 0;
+    unsigned long currentMillis3 = millis();
+    unsigned long Countdownsec;
+    unsigned long Countdownmin;
+    unsigned long Countdownhr;
+    String operName;
+    // Select which 'port' M1, M2, M3 or M4. In this case, M1   (V2)
+    CommandHandler<200> SerialCommandHandler;
+    #include <SoftwareSerial.h>
+    InterfacePanel MyPanel;
+    #include <Adafruit_MotorShield.h>
+    Adafruit_MotorShield AFMS(0x60);
+    Adafruit_MotorShield AFMS1(0x61); //this only flipped for the old (renewed) reactor 3) it should be [Adafruit_MotorShield AFMS1(0x61);]
+    Adafruit_MotorShield AFMS2(0x62); //this only flipped for the old (renewed) reactor 3) it should be [Adafruit_MotorShield AFMS2(0x62);]
+    Adafruit_MotorShield AFMS3(0x63); // This is the control sample M1,M2,M3 are the feed, waste, loop, and M4 is the Stirring
+    #include <avr/wdt.h>
+    Adafruit_DCMotor *myMotor1 = AFMS.getMotor(1);     //Feed1
+    Adafruit_DCMotor *myMotor1Sh3 = AFMS.getMotor(2);  //Feed2
+    Adafruit_DCMotor *myMotor2 = AFMS.getMotor(3);     //Waste1
+    Adafruit_DCMotor *myMotor2Sh3  = AFMS.getMotor(4);  //Waste2
+    Adafruit_DCMotor *myMotor1Sh1 = AFMS1.getMotor(1);  //combination sys pump 1
+    Adafruit_DCMotor *myMotor2Sh1 = AFMS1.getMotor(2);  //combination sys pump 2
+    Adafruit_DCMotor *myMotor3Sh1 = AFMS1.getMotor(3);  //combination sys pump 3
+    Adafruit_DCMotor *myMotor4Sh1 = AFMS1.getMotor(4);  //combination sys pump 4
+    Adafruit_DCMotor *myMotor1Sh2 = AFMS2.getMotor(1);  //Main cooling Fan
+    Adafruit_DCMotor *myMotor2Sh2 = AFMS2.getMotor(2);  //Air pump 2
+    Adafruit_DCMotor *myMotor3Sh2 = AFMS2.getMotor(3);  //Waterbath pump
+    Adafruit_DCMotor *myMotor4Sh2 = AFMS2.getMotor(4);  //Air pump 1
+    Adafruit_DCMotor *myMotor3 = AFMS3.getMotor(1);      //Loop1 
+    Adafruit_DCMotor *myMotor3Sh3 = AFMS3.getMotor(2);   //Loop2
+    Adafruit_DCMotor *myMotor4 = AFMS3.getMotor(3);      //Stir1
+    Adafruit_DCMotor *myMotor4Sh3 = AFMS3.getMotor(4);   //Stir2
+
+    #include <SD.h>
+    #include <SPI.h>
+    File myFile;
+    int pinCS = 53;
+ 
+//----------- flow and pressure sensor --------------------------
+
+
+   void Cmd_airpumpspenter(CommandParameter &p)
+    {
+    airpumpspvar = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("airpumpspval"), airpumpspvar);
+
+    myMotor4Sh2->setSpeed(airpumpspvar);
+    myMotor4Sh2->run(FORWARD);
+    myMotor2Sh2->setSpeed(airpumpspvar);
+    myMotor2Sh2->run(FORWARD);
+    }
+
+       void Cmd_airflowsetenter(CommandParameter &p)
+    {
+    airflowsetvar = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("airflowsetval"), airflowsetvar);
+    }
+
+       void Cmd_bottlepressuresetenter(CommandParameter &p)
+    {
+    bottlepressuresetvar = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("bottlepressuresetval"), bottlepressuresetvar);
+    }
+//------------------------------------------------------------
+
+
+
+    
+    // Manual pump control -----------------////////////////////
+    
+    void Cmd_Multiplyvalenter(CommandParameter &p)
+    {
+    Multiplyvar = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("Multiplyval"), Multiplyvar);
+    Multiplyvar1= 1- Multiplyvar; 
+
+     PUMPONVstand = (PUMPONmlhr2 * rpmfeedvar2)/0.5;
+     PUMPONV = (Multiplyvar * PUMPONVstand / 0.5);
+    }
+   
+    void Cmd_feedstartmanope(CommandParameter &p)
+    {
+    myMotor1->setSpeed(250);
+    myMotor1->run(FORWARD);
+    }
+    
+    void Cmd_feedstopmanope(CommandParameter &p)
+    {
+    myMotor1->run(RELEASE);
+    }
+    
+    void Cmd_feedrevmanope(CommandParameter &p)
+    {
+    myMotor1->setSpeed(250);
+    myMotor1->run(BACKWARD);
+    }
+
+
+
+    void Cmd_feed2startmanope(CommandParameter &p)
+    {
+    myMotor1Sh3->setSpeed(250);
+    myMotor1Sh3->run(FORWARD);
+    }
+    
+    void Cmd_feed2stopmanope(CommandParameter &p)
+    {
+    myMotor1Sh3->run(RELEASE);
+    }
+    
+    void Cmd_feed2revmanope(CommandParameter &p)
+    {
+    myMotor1Sh3->setSpeed(250);
+    myMotor1Sh3->run(BACKWARD);
+    }
+
+
+
+    
+    
+    void Cmd_wastestartmanope(CommandParameter &p)
+    {
+    myMotor2->setSpeed(250);
+    myMotor2->run(FORWARD);  
+    }
+    
+    void Cmd_wastestopmanope(CommandParameter &p)
+    {
+    myMotor2->run(RELEASE); 
+    }
+    void Cmd_wasterevmanope(CommandParameter &p)
+    {
+    myMotor2->setSpeed(250);
+    myMotor2->run(BACKWARD); 
+    }
+
+
+
+    void Cmd_waste2startmanope(CommandParameter &p)
+    {
+    myMotor2Sh3->setSpeed(250);
+    myMotor2Sh3->run(FORWARD);  
+    }
+    
+    void Cmd_waste2stopmanope(CommandParameter &p)
+    {
+    myMotor2Sh3->run(RELEASE); 
+    }
+    void Cmd_waste2revmanope(CommandParameter &p)
+    {
+    myMotor2Sh3->setSpeed(250);
+    myMotor2Sh3->run(BACKWARD); 
+ 
+    }
+
+    
+    void Cmd_comp1startmanope(CommandParameter &p)
+    {
+    myMotor1Sh1->setSpeed(250);
+    myMotor1Sh1->run(FORWARD);
+    }
+    void Cmd_comp1stopmanope(CommandParameter &p)
+    {
+    myMotor1Sh1->run(RELEASE);
+    }
+    void Cmd_comp1revmanope(CommandParameter &p)
+    {
+    myMotor1Sh1->setSpeed(250);
+    myMotor1Sh1->run(BACKWARD);
+    }
+    void Cmd_comp2startmanope(CommandParameter &p)
+    {
+    myMotor2Sh1->setSpeed(250);
+    myMotor2Sh1->run(FORWARD);
+    }
+    void Cmd_comp2stopmanope(CommandParameter &p)
+    {
+    myMotor2Sh1->run(RELEASE);
+    }
+    void Cmd_comp2revmanope(CommandParameter &p)
+    {
+    myMotor2Sh1->setSpeed(250);
+    myMotor2Sh1->run(BACKWARD);
+    }
+    void Cmd_comp3startmanope(CommandParameter &p)
+    {
+    myMotor3Sh1->setSpeed(250);
+    myMotor3Sh1->run(FORWARD);
+    }
+    void Cmd_comp3stopmanope(CommandParameter &p)
+    {
+    myMotor3Sh1->run(RELEASE);
+    }
+    void Cmd_comp3revmanope(CommandParameter &p)
+    {
+    myMotor3Sh1->setSpeed(250);
+    myMotor3Sh1->run(BACKWARD);
+    }
+    void Cmd_comp4startmanope(CommandParameter &p)
+    {
+    myMotor4Sh1->setSpeed(250);
+    myMotor4Sh1->run(FORWARD);
+    }
+    void Cmd_comp4stopmanope(CommandParameter &p)
+    {
+    myMotor4Sh1->run(RELEASE);
+    }
+    void Cmd_comp4revmanope(CommandParameter &p)
+    {
+    myMotor4Sh1->setSpeed(250);
+    myMotor4Sh1->run(BACKWARD);
+    }
+    void Cmd_switch1ONmanope(CommandParameter &p)
+    {
+    digitalWrite (22, HIGH);
+    digitalWrite (23, LOW);
+    }
+    void Cmd_switch1OFFmanope(CommandParameter &p)
+    {
+    digitalWrite (22, LOW);
+    digitalWrite (23, LOW);
+    
+    }
+    
+    void Cmd_switch2ONmanope(CommandParameter &p)
+    {
+    digitalWrite (24, HIGH);
+    digitalWrite (25, LOW);
+    }
+    
+    void Cmd_switch2OFFmanope(CommandParameter &p)
+    {
+    digitalWrite (24, LOW);
+    digitalWrite (25, LOW);
+    }
+    
+    // -----------------////////////////////////////
+
+
+
+
+
+
+
+//Calibration commands ----------------------------------------------------
+void Cmd_mlfeedinghowmany (CommandParameter &p)
+{
+Yvarusedml = p.NextParameterAsDouble();
+MyPanel.SetNumber(F("mlfeedinghowmanyval"),Yvarusedml);
+averagefeed1n2 = ((calfeed1minmlval + calfeed2minmlval)/2);  
+Yvarusedmin = (Yvarusedml / averagefeed1n2);
+MyPanel.SetNumber(F("Yvarusedminval"),Yvarusedmin);
+}
+
+//--------------------Calibration in min------------------------------------
+    void Cmd_onfeed1calmin(CommandParameter &p)
+    {
+    myMotor1->setSpeed(FLOWINMIN);
+    myMotor1->run(FORWARD);
+    delay (60000);
+    }
+    
+    void Cmd_onfeed2calmin(CommandParameter &p)
+    {
+    myMotor1Sh3->setSpeed(FLOWINMIN);
+    myMotor1Sh3->run(FORWARD);
+     delay (60000);
+    }
+    
+    void Cmd_onwaste1calmin(CommandParameter &p)
+    {
+    myMotor2->setSpeed(FLOWINMIN);
+    myMotor2->run(FORWARD);
+     delay (60000);
+    }
+    
+    void Cmd_onwaste2calmin(CommandParameter &p)
+    {
+    myMotor2Sh3->setSpeed(FLOWINMIN);
+    myMotor2Sh3->run(FORWARD);
+     delay (60000);
+    }
+    
+    void Cmd_onloop1calmin(CommandParameter &p)
+    {
+    myMotor3->setSpeed(FLOWINMAX);
+    myMotor3->run(FORWARD); 
+    delay (60000);
+    
+    }
+    
+    void Cmd_onloop2calmin(CommandParameter &p)
+    {
+    myMotor3Sh3->setSpeed(FLOWINMAX);
+    myMotor3Sh3->run(FORWARD);
+    delay (60000);
+    }
+    
+    void Cmd_oncomp1calmin(CommandParameter &p)
+    {
+    myMotor1Sh1->setSpeed(250);
+    myMotor1Sh1->run(FORWARD);
+    delay (60000);
+    }
+    
+    void Cmd_oncomp2calmin(CommandParameter &p)
+    {
+    myMotor2Sh1->setSpeed(250);
+    myMotor2Sh1->run(FORWARD);
+    delay (60000);
+    }
+    
+    void Cmd_oncomp3calmin(CommandParameter &p)
+    {
+    myMotor3Sh1->setSpeed(250);
+    myMotor3Sh1->run(FORWARD);
+    delay (60000);
+    }
+    
+    void Cmd_oncomp4calmin(CommandParameter &p)
+    {
+    myMotor4Sh1->setSpeed(250);
+    myMotor4Sh1->run(FORWARD);
+    delay (60000);
+    }
+
+
+    void Cmd_onfeed1calminml(CommandParameter &p)
+    {
+    calfeed1minmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calfeed1min"),calfeed1minmlval);
+    calfeed1ratioval= (calfeed1minmlval)/ (calfeed1secmlval);
+    calfeed1n2ratioval= (calfeed1minmlval)/ (calfeed2minmlval);
+    calfeed1wasteratioval= (calfeed1minmlval)/ (calwaste1minmlval);
+    MyPanel.SetNumber(F("calfeed1result"),calfeed1ratioval);
+    MyPanel.SetNumber(F("Feed1n2rationvv"),calfeed1n2ratioval);
+    MyPanel.SetNumber(F("Feed1wasterationvv"),calfeed1wasteratioval);
+    }
+    
+    void Cmd_onfeed2calminml(CommandParameter &p)
+    {
+    calfeed2minmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calfeed2min"),calfeed2minmlval);
+    calfeed2ratioval= (calfeed2minmlval)/ (calfeed2secmlval);
+    calfeed1n2ratioval= (calfeed1minmlval)/ (calfeed2minmlval);
+    calfeed2wasteratioval= (calfeed2minmlval)/(calwaste2minmlval);
+    MyPanel.SetNumber(F("calfeed2result"),calfeed2ratioval);
+    MyPanel.SetNumber(F("Feed1n2rationvv"), calfeed1n2ratioval);
+    MyPanel.SetNumber(F("Feed2wasterationvv"),calfeed2wasteratioval);
+    }
+   
+    void Cmd_onwaste1calminml(CommandParameter &p)
+    {
+    calwaste1minmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calwaste1min"),calwaste1minmlval);
+    calwaste1ratioval= (calwaste1minmlval)/ (calwaste1secmlval);
+    calwaste1n2ratioval= (calwaste1minmlval)/ (calwaste2minmlval);
+    calfeed1wasteratioval= (calfeed1minmlval)/ (calwaste1minmlval);
+    MyPanel.SetNumber(F("calwaste1result"),calwaste1ratioval);
+    MyPanel.SetNumber(F("waste1n2rationvv"), calwaste1n2ratioval);
+    MyPanel.SetNumber(F("Feed1wasterationvv"),calfeed1wasteratioval);
+    }
+    
+    void Cmd_onwaste2calminml(CommandParameter &p)
+    {
+    calwaste2minmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calwaste2min"),calwaste2minmlval);
+    calwaste2ratioval= (calwaste2minmlval)/ (calwaste2secmlval);
+    calwaste1n2ratioval= (calwaste1minmlval)/ (calwaste2minmlval);
+    calfeed2wasteratioval= (calfeed2minmlval)/(calwaste2minmlval);
+    MyPanel.SetNumber(F("calwaste2result"),calwaste2ratioval);
+    MyPanel.SetNumber(F("waste1n2rationvv"), calwaste1n2ratioval);
+    MyPanel.SetNumber(F("Feed2wasterationvv"),calfeed2wasteratioval);
+    }
+
+    void Cmd_onloop1calminml(CommandParameter &p)
+    {
+    calloop1minmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calloop1min"),calloop1minmlval);
+    calloop1ratioval= (calloop1minmlval)/ (calloop1secmlval);
+    MyPanel.SetNumber(F("calloop1result"),calloop1ratioval);
+    }
+    
+    void Cmd_onloop2calminml(CommandParameter &p)
+    {
+    calloop2minmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calloop2min"),calloop2minmlval);
+    calloop2ratioval= (calloop2minmlval)/ (calloop2secmlval);
+    MyPanel.SetNumber(F("calloop2result"),calloop2ratioval);
+    
+    
+    }
+    
+    void Cmd_oncomp1calminml(CommandParameter &p)
+    {
+    calcomb1minmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calcomp1min"),calcomb1minmlval);
+    calcomb1ratioval= (calcomb1minmlval)/ (calcomb1secmlval);
+    MyPanel.SetNumber(F("calcomp1result"),calcomb1ratioval);
+    }
+    
+    void Cmd_oncomp2calminml(CommandParameter &p)
+    {
+    calcomb2minmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calcomp2min"),calcomb2minmlval);
+    calcomb2ratioval= (calcomb2minmlval)/ (calcomb2minmlval);
+    MyPanel.SetNumber(F("calcomp2result"),calcomb2ratioval);
+    }
+
+    void Cmd_oncomp3calminml(CommandParameter &p)
+    {
+    calcomb3minmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calcomp3min"),calcomb3minmlval);
+    calcomb3ratioval= (calcomb3minmlval)/ (calcomb3secmlval);
+    MyPanel.SetNumber(F("calcomp3result"),calcomb3ratioval);
+    }
+
+     void Cmd_oncomp4calminml(CommandParameter &p)
+    {
+    calcomb4minmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calcomp4min"),calcomb4minmlval);
+    calcomb4ratioval= (calcomb4minmlval)/(calcomb4secmlval);
+    MyPanel.SetNumber(F("calcomp4result"),calcomb4ratioval);
+    }
+
+
+
+//-------------Calibration in sec--------------------------
+
+    void Cmd_onfeed1calsec(CommandParameter &p)
+    {
+    myMotor1->setSpeed(FLOWINMIN);
+    myMotor1->run(FORWARD);
+     delay (30000);
+    }
+    
+    void Cmd_onfeed2calsec(CommandParameter &p)
+    {
+    myMotor1Sh3->setSpeed(FLOWINMIN);
+    myMotor1Sh3->run(FORWARD);
+      delay (30000);
+    }
+    
+    void Cmd_onwaste1calsec(CommandParameter &p)
+    {
+    myMotor2->setSpeed(FLOWINMIN);
+    myMotor2->run(FORWARD);
+      delay (30000);
+    }
+    
+    void Cmd_onwaste2calsec(CommandParameter &p)
+    {
+    myMotor2Sh3->setSpeed(FLOWINMIN);
+    myMotor2Sh3->run(FORWARD);
+      delay (30000);
+    }
+    
+    void Cmd_onloop1calsec(CommandParameter &p)
+    {
+    myMotor3->setSpeed(FLOWINMAX);
+    myMotor3->run(FORWARD);
+      delay (30000);
+    
+    }
+    
+    void Cmd_onloop2calsec(CommandParameter &p)
+    {
+    myMotor3Sh3->setSpeed(FLOWINMAX);
+    myMotor3Sh3->run(FORWARD);
+      delay (30000);
+    }
+    
+    void Cmd_oncomp1calsec(CommandParameter &p)
+    {
+    myMotor1Sh1->setSpeed(250);
+    myMotor1Sh1->run(FORWARD);
+      delay (30000);
+    }
+    
+    void Cmd_oncomp2calsec(CommandParameter &p)
+    {
+    myMotor2Sh1->setSpeed(250);
+    myMotor2Sh1->run(FORWARD);
+      delay (30000);
+    }
+    
+    void Cmd_oncomp3calsec(CommandParameter &p)
+    {
+    myMotor3Sh1->setSpeed(250);
+    myMotor3Sh1->run(FORWARD);
+      delay (30000);
+    }
+    
+    void Cmd_oncomp4calsec(CommandParameter &p)
+    {
+    myMotor4Sh1->setSpeed(250);
+    myMotor4Sh1->run(FORWARD);
+      delay (30000);
+    }
+
+
+    
+    void Cmd_onfeed1calsecml(CommandParameter &p)
+    {
+    calfeed1secmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calfeed1sec"),calfeed1secmlval);
+    calfeed1ratioval= (calfeed1minmlval)/ (calfeed1secmlval);
+    MyPanel.SetNumber(F("calfeed1result"),calfeed1ratioval);
+    }
+    
+    void Cmd_onfeed2calsecml(CommandParameter &p)
+    {
+     calfeed2secmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calfeed2sec"),calfeed2secmlval);
+    calfeed2ratioval= (calfeed2minmlval)/ (calfeed2secmlval);
+    MyPanel.SetNumber(F("calfeed2result"),calfeed2ratioval);
+    }
+   
+    void Cmd_onwaste1calsecml(CommandParameter &p)
+    {
+     calwaste1secmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calwaste1sec"),calwaste1secmlval);
+    calwaste1ratioval= (calwaste1minmlval)/ (calwaste1secmlval);
+    MyPanel.SetNumber(F("calwaste1result"),calwaste1ratioval);
+    }
+    
+    void Cmd_onwaste2calsecml(CommandParameter &p)
+    {
+     calwaste2secmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calwaste2sec"),calwaste2secmlval);
+    calwaste2ratioval= (calwaste2minmlval)/ (calwaste2secmlval);
+    MyPanel.SetNumber(F("calwaste2result"),calwaste2ratioval);
+    }
+
+    void Cmd_onloop1calsecml(CommandParameter &p)
+    {
+     calloop1secmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calloop1sec"),calloop1secmlval);
+    calloop1ratioval= (calloop1minmlval)/ (calloop1secmlval);
+    MyPanel.SetNumber(F("calloop1result"),calloop1ratioval);
+    }
+    
+    void Cmd_onloop2calsecml(CommandParameter &p)
+    {
+     calloop2secmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calloop2sec"),calloop2secmlval);
+    calloop2ratioval= (calloop2minmlval)/ (calloop2secmlval);
+    MyPanel.SetNumber(F("calloop2result"),calloop2ratioval);
+    }
+    
+    void Cmd_oncomp1calsecml(CommandParameter &p)
+    {
+     calcomb1secmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calcomp1sec"),calcomb1secmlval);
+    calcomb1ratioval= (calcomb1minmlval)/ (calcomb1secmlval);
+    MyPanel.SetNumber(F("calcomp1result"),calcomb1ratioval);
+    }
+    
+    void Cmd_oncomp2calsecml(CommandParameter &p)
+    {
+     calcomb2secmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calcomp2sec"),calcomb2secmlval);
+    calcomb2ratioval= (calcomb2minmlval)/ (calcomb2secmlval);
+    MyPanel.SetNumber(F("calcomp2result"),calcomb2ratioval);
+    }
+
+    void Cmd_oncomp3calsecml(CommandParameter &p)
+    {
+    calcomb3secmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calcomp3sec"),calcomb3secmlval);
+    calcomb3ratioval= (calcomb3minmlval)/ (calcomb3secmlval);
+    MyPanel.SetNumber(F("calcomp3result"),calcomb3ratioval);
+    }
+
+    void Cmd_oncomp4calsecml(CommandParameter &p)
+    {
+    calcomb4secmlval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("calcomp4sec"),calcomb4secmlval);
+    calcomb4ratioval= (calcomb4minmlval)/(calcomb4secmlval);
+    MyPanel.SetNumber(F("calcomp4result"),calcomb4ratioval);
+    }
+//--------------------------------------------------------
+
+    void Cmd_bathpump(CommandParameter &p)
+    {
+    Waterbathpumpvar = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("Waterbathpump"), Waterbathpumpvar);
+    myMotor3Sh2->setSpeed(Waterbathpumpvar);
+    myMotor3Sh2->run(FORWARD);
+    }
+    
+    void Cmd_ODBASELINE(CommandParameter &p)
+    {
+    EmptyODval = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("ODBASELINEVal"),EmptyODval);
+    }
+ 
+    void Cmd_feedspeedcont(CommandParameter &p)
+    {
+    feedspeedcont1 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("FeedspeedVal"),feedspeedcont1);
+    feedspeedcont2= feedspeedcont1 +  FLOWINMIN;
+    }
+    
+    void Cmd_Conttimestopinterval(CommandParameter &p)
+    {
+    
+    Conttimestopinterval2 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("FedWastestopint"),Conttimestopinterval2);
+    Conttimestopinterval3= Conttimestopinterval2 * 1000;
+    }
+    void Cmd_VolumerestMIN(CommandParameter &p)
+    {
+    VolumerestMIN3 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("VolRestVAl"),VolumerestMIN3);
+    VolumerestMIN4 = VolumerestMIN3 * 60000;
+    } 
+    void Cmd_VolumerestHR(CommandParameter &p)
+    {
+    VolumerestHR4 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("VolRestVAl"),VolumerestHR4);
+    VolumerestHR5 = VolumerestHR4 * 3600000;
+    }
+    void Cmd_OFFLOOPINTsent(CommandParameter &p)
+    {
+    OFFLOOPINTVAR = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("OFFLOOPINTVAL"),OFFLOOPINTVAR);
+    }
+    void Cmd_ONLOOPINTsent(CommandParameter &p)
+    {
+    ONLOOPINTVAR = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("ONLOOPINTVAL"),ONLOOPINTVAR);
+    }
+    void Cmd_REVLOOPINTsent(CommandParameter &p)
+    {
+    REVLOOPINTVAR = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("REVLOOPINTVAL"),REVLOOPINTVAR);
+    }
+    //------Enter temperature--------------------------------------------------------
+    void Cmd_Temperaturenter(CommandParameter &p)
+    {
+    temperaturesetvar = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("Temperatureset"),temperaturesetvar );
+    }
+    //-------------------------------------------------------------------------------
+    //------stirr--------------------------------------------------------------------
+    void Cmd_Stirring(CommandParameter &p)
+    {
+    Stirvar = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("Stirvalue"),Stirvar );
+    
+    myMotor4->setSpeed(Stirvar);
+    myMotor4Sh3->setSpeed(Stirvar);
+    myMotor4->run(FORWARD);
+    myMotor4Sh3->run(FORWARD);
+    }
+ 
+
+    //----------------------------------------------------
+
+
+
+
+//-------------Calibration from ml to min-----------Fix ittttt Nov-24--
+     void Cmd_rpmfeedenter(CommandParameter &p)
+    {
+    //rpmfeedvar = p.NextParameterAsDouble();
+    //MyPanel.SetNumber(F("rpmfeedval"), rpmfeedvar);
+   // rpmfeedvar2 = 23.5 / rpmfeedvar;
+    //Multiplyvar1= 1- Multiplyvar;
+    }
+     void Cmd_PUMPDELAYONml(CommandParameter &p)
+    {
+    PUMPONmlVar = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PUMPONmlVAL"), (PUMPONmlVar));
+    //PUMPONmlhr2 = (PUMPONmlVar * 0.017)/ 4.125;
+    //PUMPONV = (PUMPONmlhr2 * rpmfeedvar2)/Multiplyvar1;
+    averagefeed1n2 = ((calfeed1minmlval + calfeed2minmlval)/2);  
+    Yvarusedmin = (PUMPONmlVar / averagefeed1n2);
+    PUMPONV= Yvarusedmin;
+    PUMPONV3 = ((PUMPONV)/60);
+    MyPanel.SetNumber(F("PUMPONVAL"), PUMPONV);
+    }
+    //-----------------------------------------------------------
+
+
+
+
+
+    
+    //Combination system INPUT=====categorize---------------------------------------------------
+    
+    void Cmd_PuOFFComb1(CommandParameter &p)
+    {
+    PuOFFCombVar1 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuOFFCombVal1"),PuOFFCombVar1 );
+    }
+    void Cmd_PuONComb1(CommandParameter &p)
+    {
+    PuONCombVar1 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuONCombVal1"),PuONCombVar1);
+    
+    PuONCombmlVar1= PuONCombmltominVar1*calcomb1minmlval;
+    MyPanel.SetNumber(F("PuONCombmlVal1"),PuONCombmlVar1);
+    Allcombvalue = PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4; 
+    MyPanel.SetNumber(F("allcombvalvar"), Allcombvalue);
+    }
+    void Cmd_PuSpeedComb1(CommandParameter &p)
+    {
+    PuSpeedCombVar1 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuSpeedCombVal1"),PuSpeedCombVar1);
+    }
+    void Cmd_PuOFFComb2(CommandParameter &p)
+    {
+    PuOFFCombVar2 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuOFFCombVal2"),PuOFFCombVar2 );
+    }
+    void Cmd_PuONComb2(CommandParameter &p)
+    {
+    PuONCombVar2 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuONCombVal2"),PuONCombVar2);
+    
+    PuONCombmlVar2= PuONCombmltominVar2*calcomb2minmlval;
+    MyPanel.SetNumber(F("PuONCombmlVal2"),PuONCombmlVar2);
+    Allcombvalue = PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4;
+    MyPanel.SetNumber(F("allcombvalvar"), Allcombvalue);
+    }
+    void Cmd_PuSpeedComb2(CommandParameter &p)
+    {
+    PuSpeedCombVar2 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuSpeedCombVal2"),PuSpeedCombVar2);
+    }
+    void Cmd_PuOFFComb3(CommandParameter &p)
+    {
+    PuOFFCombVar3 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuOFFCombVal3"),PuOFFCombVar3);
+    }
+    void Cmd_PuONComb3(CommandParameter &p)
+    {
+    PuONCombVar3 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuONCombVal3"),PuONCombVar3);
+    
+    PuONCombmlVar3= PuONCombmltominVar3*calcomb3minmlval;
+    MyPanel.SetNumber(F("PuONCombmlVal3"),PuONCombmlVar3);
+    Allcombvalue = PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4;
+    MyPanel.SetNumber(F("allcombvalvar"), Allcombvalue);
+    }
+    void Cmd_PuSpeedComb3(CommandParameter &p)
+    {
+    PuSpeedCombVar3 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuSpeedCombVal3"),PuSpeedCombVar3);
+    }
+    void Cmd_PuOFFComb4(CommandParameter &p)
+    {
+    PuOFFCombVar4 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuOFFCombVal4"),PuOFFCombVar4 );
+    }
+    void Cmd_PuONComb4(CommandParameter &p)
+    {
+    PuONCombVar4 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuONCombVal4"),PuONCombVar4);
+    PuONCombmlVar4= PuONCombmltominVar4*calcomb4minmlval;
+    MyPanel.SetNumber(F("PuONCombmlVal4"),PuONCombmlVar4);
+    Allcombvalue = PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4;
+    MyPanel.SetNumber(F("allcombvalvar"), Allcombvalue);
+    }
+  
+    void Cmd_PuSpeedComb4(CommandParameter &p)
+    {
+    PuSpeedCombVar4 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuSpeedCombVal4"),PuSpeedCombVar4);
+    }
+
+
+
+
+  void Cmd_PuONCombml1(CommandParameter &p)
+    {
+    PuONCombmlVar1 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuONCombmlVal1"),PuONCombmlVar1);
+    PuONCombmltominVar1 =(PuONCombmlVar1/calcomb1minmlval);
+    PuONCombVar1 = PuONCombmltominVar1;
+   
+     MyPanel.SetNumber(F("PuONCombVal1"),PuONCombVar1);
+     Allcombvalue = PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4;
+     MyPanel.SetNumber(F("allcombvalvar"), Allcombvalue);
+    }
+
+
+      void Cmd_PuONCombml2(CommandParameter &p)
+    {
+    PuONCombmlVar2 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuONCombmlVal2"),PuONCombmlVar2);
+    PuONCombmltominVar2 =(PuONCombmlVar2/calcomb2minmlval);
+PuONCombVar2 = PuONCombmltominVar2;
+
+     MyPanel.SetNumber(F("PuONCombVal2"),PuONCombVar2);
+     Allcombvalue = PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4;
+     MyPanel.SetNumber(F("allcombvalvar"), Allcombvalue);
+    }
+
+
+      void Cmd_PuONCombml3(CommandParameter &p)
+    {
+    PuONCombmlVar3 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuONCombmlVal3"),PuONCombmlVar3);
+    PuONCombmltominVar3 =(PuONCombmlVar3/calcomb3minmlval);
+PuONCombVar3 = PuONCombmltominVar3;
+
+     MyPanel.SetNumber(F("PuONCombVal3"),PuONCombVar3);
+     Allcombvalue = PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4;
+     MyPanel.SetNumber(F("allcombvalvar"), Allcombvalue);
+    }
+
+
+      void Cmd_PuONCombml4(CommandParameter &p)
+    {
+    PuONCombmlVar4 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PuONCombmlVal4"),PuONCombmlVar4);
+    PuONCombmltominVar4 =(PuONCombmlVar4/calcomb4minmlval);
+PuONCombVar4 = PuONCombmltominVar4;
+
+     MyPanel.SetNumber(F("PuONCombVal4"),PuONCombVar4);
+     Allcombvalue = PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4;
+     MyPanel.SetNumber(F("allcombvalvar"), Allcombvalue);
+    }
+
+
+
+
+
+
+      void Cmd_entercomvalues(CommandParameter &p)
+    {
+  PuONCombminVar1= PuONCombVar1/60;
+  PuONCombminVar2= PuONCombVar2/60;
+  PuONCombminVar3= PuONCombVar3/60;
+  PuONCombminVar4= PuONCombVar4/60;
+    }
+
+
+
+    
+
+    //-----------------------------------------------------------------------------
+    void Cmd_ODREADS(CommandParameter &p)
+    {
+    ODREADSS = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("ODREADSVAL"), ODREADSS);
+    }
+    void Cmd_FWValueBB(CommandParameter &p)
+    {
+    FEDWASTEVAR1 = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("FWValueV"),FEDWASTEVAR1 ); 
+    FEDWASTEVAR2= FEDWASTEVAR1*1000;
+    } 
+    void Cmd_FeedBDown(CommandParameter &p)
+    {
+    MyPanel.ShowControl(F("Arrow1"));
+    myMotor1->setSpeed(FLOWINMIN);
+    myMotor1->run(FORWARD);
+    myMotor1Sh2->setSpeed(200);
+    myMotor1Sh2->run(FORWARD); 
+    delay(FEDWASTEVAR2);
+   /* while (Automaticcond1== 1){
+      SerialCommandHandler.Process();
+      Automaticcond();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    }*/
+    while (Automaticcond1== 0){
+      SerialCommandHandler.Process();
+      Manualcond();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    } 
+   /* while (Automaticcond1== 2){
+      SerialCommandHandler.Process();
+      AutoManualcond();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    } */
+   /* 
+    while (Automaticcond1== 3){
+      SerialCommandHandler.Process();
+      ContinousFS();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    }
+    */ 
+    }
+    void Cmd_Initialfeed(CommandParameter &p)
+    {
+    myMotor1->setSpeed(FLOWINMIN);
+    myMotor1->run(FORWARD);
+    myMotor1Sh2->setSpeed(200);
+    myMotor1Sh2->run(FORWARD); 
+    delay(Initialfeed);
+    myMotor1Sh2->setSpeed(70); 
+    myMotor1Sh2->run(FORWARD); 
+    myMotor1->run(RELEASE);
+    }
+    void Cmd_WasteBDown(CommandParameter &p)
+    {
+    MyPanel.ShowControl(F("Arrow2"));
+    myMotor2->setSpeed(FLOWINMIN);
+    myMotor2->run(FORWARD);
+    myMotor1Sh2->setSpeed(200);
+    myMotor1Sh2->run(FORWARD); 
+    delay(FEDWASTEVAR2);
+    
+   /*   while (Automaticcond1== 1){
+      SerialCommandHandler.Process();
+    Automaticcond();
+      
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    }*/
+    while (Automaticcond1== 0){
+      SerialCommandHandler.Process();
+      Manualcond();
+      
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    } 
+    
+   /* while (Automaticcond1== 2){
+      SerialCommandHandler.Process();
+      AutoManualcond();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } */
+    /*
+    while (Automaticcond1== 3){
+      SerialCommandHandler.Process();
+      ContinousFS();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } 
+    */
+    }
+    void Cmd_LoopStop(CommandParameter &p)
+    {
+    FLOWINMAX = 0;
+    MyPanel.SetNumber(F("INMAXVAL"), FLOWINMAX);
+    
+    }
+    
+    void Cmd_UVHR(CommandParameter &p)
+    {
+    UVMUT = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("UVVAL"), UVMUT);
+    if (UVMUT <= 0.1) {
+      UVOFF=0;
+      PulseUVNow = 0;
+      readuvOFF= 0;
+      readuvOFF2=0;
+    }
+    else if (UVMUT >= 0.2) {
+       UVOFF=2000;
+       
+       readuvOFF= 0.01;
+    }
+    }
+    
+    void Cmd_PUMPON(CommandParameter &p)
+    {
+    PUMPONV = p.NextParameterAsDouble();
+    PUMPONV3 = ((PUMPONV)/60);
+    MyPanel.SetNumber(F("PUMPONVAL"), PUMPONV);
+    Initialfeed= (PUMPONV*0.2)*3600000;
+    }
+    
+    void Cmd_PUMPOFF(CommandParameter &p)
+    {  
+    PUMPOFFV = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PUMPOFFVAL"), PUMPOFFV); 
+    ODVarT8=PUMPOFFV*3600000;
+    hour(0);
+    second(0);
+    minute(0);
+    Timediff2 = PUMPOFFV*3600000;
+    addPumpOFF = PUMPOFFV + hour();
+    PUMPOFFVall = (PUMPOFFVmin+PUMPOFFV);
+    
+    }
+
+   void Cmd_PUMPDELAYOFFmin(CommandParameter &p)
+    {  
+    PUMPOFFVhr = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("PUMPOFFminVAL"), PUMPOFFVhr); 
+    PUMPOFFVmin = ((PUMPOFFVhr)/60);
+    PUMPOFFVall = (PUMPOFFVmin+PUMPOFFV);
+    
+    }
+
+
+
+    void Cmd_ReverseWaste(CommandParameter &p)
+    {  
+    
+    MyPanel.ShowControl(F("Arrowreverse"));
+    myMotor2->setSpeed(FLOWINMIN);
+    myMotor2->run(BACKWARD);
+    myMotor1Sh2->setSpeed(200);
+    myMotor1Sh2->run(FORWARD); 
+    delay(8000);
+    MyPanel.HideControl(F("Arrowreverse"));
+    /*while (Automaticcond1== 1){
+      SerialCommandHandler.Process();
+      Automaticcond();
+      
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    }*/
+    while (Automaticcond1== 0){
+      SerialCommandHandler.Process();
+      Manualcond();
+      
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    } 
+    
+    /*while (Automaticcond1== 2){
+      SerialCommandHandler.Process();
+      AutoManualcond();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } */
+    /*
+    while (Automaticcond1== 3){
+      SerialCommandHandler.Process();
+      ContinousFS();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } 
+    */
+    }
+    void Cmd_GetODMAX(CommandParameter &p)
+    {
+    ODMAX = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("ODMAXVAL"), ODMAX);
+    }
+    
+    void Cmd_FLOWADDINV(CommandParameter &p) //This is the OD Min
+    {
+    ODMIN = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("ADDINVAL"), ODMIN);
+    ODMINLOOP = ODMIN;
+    }
+    
+    void Cmd_FLOWMAXV(CommandParameter &p)
+    {
+    FLOWINMAX = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("INMAXVAL"), FLOWINMAX);
+    }
+    
+    
+    void Cmd_FLOWMINV(CommandParameter &p)
+    {
+    FLOWINMIN = p.NextParameterAsDouble();
+    MyPanel.SetNumber(F("INMINVAL"), FLOWINMIN);
+    }
+
+    void Cmd_Auto(CommandParameter &p)
+    {
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (100);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    ODMAX = 50;
+    FLOWINMAX = 220;
+    FLOWINMIN = 250;
+    FLOWADDIN = 50;
+    Automaticcond1= 1;
+    ProcessStatus=1;
+    MyPanel.DisableControl(F("Manualcheck"));
+    MyPanel.DisableControl(F("ContinousFB"));
+    MyPanel.SetNumber(F("INMAXVAL"), FLOWINMAX);
+    MyPanel.SetNumber(F("INMINVAL"), FLOWINMIN);
+    MyPanel.SetNumber(F("PUMPOFFVAL"), PUMPOFFV);
+    MyPanel.DisableControl(F("MAN-AUTO"));
+    MyPanel.DisableControl(F("INMAXVAL"));
+    MyPanel.DisableControl(F("INMINVAL"));
+    MyPanel.DisableControl(F("ADDINVAL"));
+    MyPanel.DisableControl(F("PUMPOFFVAL"));
+    MyPanel.DisableControl(F("PUMPONVAL"));
+    MyPanel.EnableControl(F("ODMAXVAL"));
+    MyPanel.DisableControl(F("PUMPONBUT"));
+    MyPanel.DisableControl(F("PUMPOFFBUT"));
+    MyPanel.DisableControl(F("INMAX"));
+    MyPanel.DisableControl(F("INMIN"));
+    MyPanel.DisableControl(F("ADDIN"));
+    MyPanel.EnableControl(F("ODMAX"));
+    }
+    
+      void Cmd_Manual(CommandParameter &p)
+    {
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (100);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    Automaticcond1= 0;
+    ProcessStatus=2;
+    MyPanel.DisableControl(F("MAN-AUTO"));
+    MyPanel.DisableControl(F("Autocheck"));
+    MyPanel.DisableControl(F("ContinousFB"));
+    MyPanel.EnableControl(F("INMAXVAL"));
+    MyPanel.EnableControl(F("INMINVAL"));
+    MyPanel.EnableControl(F("ADDINVAL"));
+    MyPanel.EnableControl(F("PUMPOFFVAL"));
+    MyPanel.EnableControl(F("PUMPONVAL"));
+    MyPanel.EnableControl(F("ODMAXVAL"));
+    MyPanel.SetNumber(F("PUMPOFFVAL"), PUMPOFFV);
+    MyPanel.SetNumber(F("PUMPONVAL"), PUMPONV);
+    MyPanel.EnableControl(F("PUMPONBUT"));
+    MyPanel.EnableControl(F("PUMPOFFBUT"));
+    MyPanel.EnableControl(F("INMAX"));
+    MyPanel.EnableControl(F("INMIN"));
+    MyPanel.EnableControl(F("ADDIN"));
+    MyPanel.EnableControl(F("ODMAX"));
+
+
+    
+    
+    }
+
+     //------Reports--------------------------
+
+    void Cmd_ReportRefresh(CommandParameter &p)
+    {
+
+MyPanel.SetText(F("Number"), "3");
+MyPanel.SetText(F("Report2"), "3");
+MyPanel.SetNumber(F("Report3"), ProcessStatus);
+MyPanel.SetNumber(F("Report4"), 0);
+MyPanel.SetNumber(F("Report5"), PUMPOFFV);
+MyPanel.SetNumber(F("Report6"), PUMPONV);
+MyPanel.SetNumber(F("Report7"), FLOWINMAX);
+MyPanel.SetNumber(F("Report8"), FLOWINMIN);
+MyPanel.SetNumber(F("Report9"), ODMIN);
+MyPanel.SetNumber(F("Report10"), ODMAX);
+MyPanel.SetNumber(F("Report11"), ODREADSS);
+MyPanel.SetNumber(F("Report12"), 0);
+MyPanel.SetNumber(F("Report13"), 0);
+MyPanel.SetNumber(F("Multiplyval"), Multiplyvar);
+MyPanel.SetNumber(F("Waterbathpump"), Waterbathpumpvar);
+MyPanel.SetNumber(F("ODBASELINEVal"),EmptyODval);
+MyPanel.SetNumber(F("FeedspeedVal"),feedspeedcont1);
+MyPanel.SetNumber(F("FedWastestopint"),Conttimestopinterval2);
+MyPanel.SetNumber(F("VolRestVAl"),VolumerestMIN3);
+MyPanel.SetNumber(F("VolRestVAl"),VolumerestHR4);
+MyPanel.SetNumber(F("OFFLOOPINTVAL"),OFFLOOPINTVAR);
+MyPanel.SetNumber(F("ONLOOPINTVAL"),ONLOOPINTVAR);
+MyPanel.SetNumber(F("REVLOOPINTVAL"),REVLOOPINTVAR);
+MyPanel.SetNumber(F("Temperatureset"),temperaturesetvar );
+MyPanel.SetNumber(F("Stirvalue"),Stirvar );
+MyPanel.SetNumber(F("PuONCombVal1"),PuONCombVar1);
+MyPanel.SetNumber(F("PuONCombVal2"),PuONCombVar2);
+MyPanel.SetNumber(F("PuONCombVal3"),PuONCombVar3);
+MyPanel.SetNumber(F("PuONCombVal4"),PuONCombVar4);
+MyPanel.SetNumber(F("ODREADSVAL"), ODREADSS);
+MyPanel.SetNumber(F("FWValueV"),FEDWASTEVAR1 );
+MyPanel.SetNumber(F("INMAXVAL"), FLOWINMAX);
+MyPanel.SetNumber(F("UVVAL"), UVMUT);
+MyPanel.SetNumber(F("PUMPONVAL"), PUMPONV);
+MyPanel.SetNumber(F("PUMPOFFVAL"), PUMPOFFV); 
+MyPanel.SetNumber(F("ODMAXVAL"), ODMAX);
+MyPanel.SetNumber(F("ADDINVAL"), ODMIN);
+MyPanel.SetNumber(F("INMAXVAL"), FLOWINMAX);
+MyPanel.SetNumber(F("INMINVAL"), FLOWINMIN);
+MyPanel.SetNumber(F("INMAXVAL"), FLOWINMAX);
+MyPanel.SetNumber(F("INMINVAL"), FLOWINMIN);
+MyPanel.SetNumber(F("PUMPOFFVAL"), PUMPOFFV);
+MyPanel.SetNumber(F("PUMPOFFminVAL"), PUMPOFFVhr); 
+MyPanel.SetNumber(F("calfeed1min"),calfeed1minmlval);
+MyPanel.SetNumber(F("calfeed1result"),calfeed1ratioval);
+MyPanel.SetNumber(F("Feed1n2rationvv"),calfeed1n2ratioval);
+MyPanel.SetNumber(F("Feed1wasterationvv"),calfeed1wasteratioval);
+MyPanel.SetNumber(F("calfeed2min"),calfeed2minmlval);
+MyPanel.SetNumber(F("calfeed2result"),calfeed2ratioval);
+MyPanel.SetNumber(F("Feed1n2rationvv"), calfeed1n2ratioval);
+MyPanel.SetNumber(F("Feed2wasterationvv"),calfeed2wasteratioval);
+MyPanel.SetNumber(F("calwaste1min"),calwaste1minmlval);
+MyPanel.SetNumber(F("calwaste1result"),calwaste1ratioval);
+MyPanel.SetNumber(F("waste1n2rationvv"), calwaste1n2ratioval);
+MyPanel.SetNumber(F("Feed1wasterationvv"),calfeed1wasteratioval);  
+MyPanel.SetNumber(F("calwaste2min"),calwaste2minmlval);
+MyPanel.SetNumber(F("calwaste2result"),calwaste2ratioval);
+MyPanel.SetNumber(F("waste1n2rationvv"), calwaste1n2ratioval);
+MyPanel.SetNumber(F("Feed2wasterationvv"),calfeed2wasteratioval);
+MyPanel.SetNumber(F("calloop1min"),calloop1minmlval);
+MyPanel.SetNumber(F("calloop1result"),calloop1ratioval);
+MyPanel.SetNumber(F("calloop2min"),calloop2minmlval);
+MyPanel.SetNumber(F("calloop2result"),calloop2ratioval);
+MyPanel.SetNumber(F("calcomp1min"),calcomb1minmlval);
+MyPanel.SetNumber(F("calcomp1result"),calcomb1ratioval);
+MyPanel.SetNumber(F("calcomp2min"),calcomb2minmlval);
+MyPanel.SetNumber(F("calcomp2result"),calcomb2ratioval);
+MyPanel.SetNumber(F("calcomp3min"),calcomb3minmlval);
+MyPanel.SetNumber(F("calcomp3result"),calcomb3ratioval);
+MyPanel.SetNumber(F("calcomp4min"),calcomb4minmlval);
+MyPanel.SetNumber(F("calcomp4result"),calcomb4ratioval);
+MyPanel.SetNumber(F("calfeed1sec"),calfeed1secmlval);
+MyPanel.SetNumber(F("calfeed1result"),calfeed1ratioval);
+MyPanel.SetNumber(F("calfeed2sec"),calfeed2secmlval);
+MyPanel.SetNumber(F("calfeed2result"),calfeed2ratioval);
+MyPanel.SetNumber(F("calwaste1sec"),calwaste1secmlval);
+MyPanel.SetNumber(F("calwaste1result"),calwaste1ratioval);
+MyPanel.SetNumber(F("calwaste2sec"),calwaste2secmlval);
+MyPanel.SetNumber(F("calwaste2result"),calwaste2ratioval);
+MyPanel.SetNumber(F("calloop1sec"),calloop1secmlval);
+MyPanel.SetNumber(F("calloop1result"),calloop1ratioval);
+MyPanel.SetNumber(F("calloop2sec"),calloop2secmlval);
+MyPanel.SetNumber(F("calloop2result"),calloop2ratioval);
+MyPanel.SetNumber(F("calcomp1sec"),calcomb1secmlval);
+MyPanel.SetNumber(F("calcomp1result"),calcomb1ratioval);
+MyPanel.SetNumber(F("calcomp2sec"),calcomb2secmlval);
+MyPanel.SetNumber(F("calcomp2result"),calcomb2ratioval);
+MyPanel.SetNumber(F("calcomp3sec"),calcomb3secmlval);
+MyPanel.SetNumber(F("calcomp3result"),calcomb3ratioval);
+MyPanel.SetNumber(F("calcomp4sec"),calcomb4secmlval);
+MyPanel.SetNumber(F("calcomp4result"),calcomb4ratioval);
+    
+    /*while (Automaticcond1== 1){
+      SerialCommandHandler.Process();
+      Automaticcond();
+      
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    
+    }*/
+    while (Automaticcond1== 0){
+      SerialCommandHandler.Process();
+      Manualcond();
+      
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } 
+    
+   /* while (Automaticcond1== 2){
+      SerialCommandHandler.Process();
+      AutoManualcond();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } */
+    /*
+    while (Automaticcond1== 3){
+      SerialCommandHandler.Process();
+      ContinousFS();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } 
+    */
+    }
+
+//---------------------------------------------------------------------------------   
+
+    void Cmd_MANAUTO(CommandParameter &p)
+    {
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (100);
+    analogWrite (10, 0);
+    analogWrite (29,0);
+    Automaticcond1= 2;
+    ProcessStatus=3;
+    MyPanel.DisableControl(F("Autocheck"));
+    MyPanel.DisableControl(F("Manualcheck"));
+    MyPanel.DisableControl(F("ContinousFB"));
+    MyPanel.EnableControl(F("INMAXVAL"));
+    MyPanel.EnableControl(F("INMINVAL"));
+    MyPanel.EnableControl(F("ADDINVAL")); //OD MIN
+    MyPanel.EnableControl(F("PUMPOFFVAL"));
+    MyPanel.EnableControl(F("PUMPONVAL"));
+    MyPanel.EnableControl(F("ODMAXVAL"));
+    MyPanel.SetNumber(F("PUMPOFFVAL"), PUMPOFFV);
+    MyPanel.SetNumber(F("PUMPONVAL"), PUMPONV);
+    MyPanel.EnableControl(F("PUMPONBUT"));
+    MyPanel.EnableControl(F("PUMPOFFBUT"));
+    MyPanel.EnableControl(F("INMAX"));
+    MyPanel.EnableControl(F("INMIN"));
+    MyPanel.EnableControl(F("ADDIN"));
+    MyPanel.EnableControl(F("ODMAX"));
+    }
+   
+    void Cmd_STOPOPTION(CommandParameter &p) //Freeze option
+    {
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (100);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    ProcessStatus=5;
+    MyPanel.DisableControl(F("INMAXVAL"));
+    MyPanel.DisableControl(F("INMINVAL"));
+    MyPanel.DisableControl(F("ADDINVAL"));
+    MyPanel.DisableControl(F("PUMPOFFVAL"));
+    MyPanel.DisableControl(F("PUMPONVAL"));
+    MyPanel.DisableControl(F("ODMAXVAL"));
+    MyPanel.DisableControl(F("PUMPONBUT"));
+    MyPanel.DisableControl(F("PUMPOFFBUT"));
+    MyPanel.DisableControl(F("INMAX"));
+    MyPanel.DisableControl(F("INMIN"));
+    MyPanel.DisableControl(F("ADDIN"));
+    MyPanel.DisableControl(F("ODMAX"));
+    MyPanel.EnableControl(F("Autocheck"));
+    MyPanel.EnableControl(F("Manualcheck"));
+    MyPanel.EnableControl(F("MAN-AUTO"));
+    MyPanel.EnableControl(F("ContinousFB"));
+    MyPanel.DisableControl(F("Entcont1"));
+    MyPanel.DisableControl(F("FeedspeedVal"));
+    MyPanel.DisableControl(F("IPButton59"));
+    MyPanel.DisableControl(F("FedWastestopint"));
+    MyPanel.DisableControl(F("Entcont2"));
+    MyPanel.DisableControl(F("IPButton60"));
+    MyPanel.DisableControl(F("VolRestVAl"));
+
+
+
+    
+    }
+
+    void Cmd_Move1(CommandParameter &p)
+    {
+    analogWrite (9, 2000);
+    
+    MyPanel.HideControl(F("Arrow0"));
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (500);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    delay (100);
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (500);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    MyPanel.SetText(F("Switch"), "ON");
+    MyPanel.SetBackColor(F("Switch"), F("green"));
+    MyPanel.ShowControl(F("Refresh"));
+    MyPanel.DisableControl(F("Initialfeedbut"));
+    unsigned long currentMillis = millis();
+    unsigned long currenthour = hour(0);
+    unsigned long currentsec = second(0);
+    unsigned long currentmin = minute(0);
+
+    setTime(00,00,00,01, 01, 0000);
+     previousMillis = currentMillis;
+      previousMillis2 = currentMillis;
+      MyPanel.SetNumber(F("Statusshow"), ProcessStatus);
+
+    MyPanel.DisableControl(F("cali1delaymin"));
+    MyPanel.DisableControl(F("cali2delaymin"));
+    MyPanel.DisableControl(F("cali3delaymin"));
+    MyPanel.DisableControl(F("cali4delaymin"));
+    MyPanel.DisableControl(F("cali5delaymin"));
+    MyPanel.DisableControl(F("cali6delaymin"));
+    MyPanel.DisableControl(F("cali7delaymin"));
+    MyPanel.DisableControl(F("cali8delaymin"));
+    MyPanel.DisableControl(F("cali9delaymin"));
+    MyPanel.DisableControl(F("cali10delaymin"));
+    MyPanel.DisableControl(F("cali1delaysec"));
+    MyPanel.DisableControl(F("cali2delaysec"));
+    MyPanel.DisableControl(F("cali3delaysec"));
+    MyPanel.DisableControl(F("cali4delaysec"));
+    MyPanel.DisableControl(F("cali5delaysec"));
+    MyPanel.DisableControl(F("cali6delaysec"));
+    MyPanel.DisableControl(F("cali7delaysec"));
+    MyPanel.DisableControl(F("cali8delaysec"));
+    MyPanel.DisableControl(F("cali9delaysec"));
+    MyPanel.DisableControl(F("cali10delaysec"));
+
+
+    MyPanel.ShowControl(F("ONSgin"));
+
+      
+    /*while (Automaticcond1== 1){
+      SerialCommandHandler.Process();
+      Automaticcond();
+      
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    }*/
+    
+    while (Automaticcond1== 0){
+      SerialCommandHandler.Process();
+      Manualcond();
+      
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } 
+    /*
+    while (Automaticcond1== 2){
+      SerialCommandHandler.Process();
+      AutoManualcond();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } */
+    /*
+    while (Automaticcond1== 3){
+      SerialCommandHandler.Process();
+      ContinousFS();
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } 
+    */
+    }
+    
+   
+    void Manualcond(){
+    
+    unsigned long currentMillis = millis();
+    unsigned long currentMillis2 = millis();
+    unsigned long currentMillis3 = millis();
+    unsigned long currentMillis4 = millis(); 
+
+    int CurrentOD =  analogRead(A0);
+    int CurrentOD1 = analogRead(A1);
+    int CurrentOD2 = analogRead(A14);
+    int CurrentOD3 = analogRead(A15);
+
+    unsigned long curOD1OD2 = CurrentOD - CurrentOD1;
+    unsigned long curOD3OD4 = CurrentOD2 - CurrentOD3;
+    unsigned long curOD1OD3 = CurrentOD - CurrentOD2;
+    unsigned long curdiffOD1OD3 = curOD1OD2 - curOD3OD4;
+    
+    unsigned long EmptyODval;
+    unsigned long RealOD= -log(CurrentOD/EmptyODval);
+
+wdt_enable(WDTO_4S);
+    //------------Temp and pressure and Waterbath level sensor------------
+    sensors.requestTemperatures(); 
+    Celcius=sensors.getTempCByIndex(0);
+    MyPanel.SetNumber(F("Temperatureactual"), Celcius);
+
+
+       float bottlepressureactualvar0= analogRead (A8);
+        bottlepressureactualvar = ((bottlepressureactualvar0 / 1024)*(30));
+
+        
+       float bottlepressureposiactualvar0= analogRead (A9);
+        bottlepressureposiactualvar= ((bottlepressureposiactualvar0 / 1024)*(30));
+
+        
+
+
+    MyPanel.SetNumber(F("airflowactualval"), airflowactualvar);
+    MyPanel.SetNumber(F("bottlepressureactualval"), bottlepressureactualvar);
+    MyPanel.SetNumber(F("bottlepressure+actualval"), bottlepressureposiactualvar);
+
+
+//-------//Alarm for pressure 
+
+  if (bottlepressureactualvar >= 6){
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (50);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    MyPanel.ShowControl(F("Pressure1"));
+    myMotor4Sh2->run(RELEASE);
+    }
+      else {
+     analogWrite (10, 0);
+    analogWrite (29, 0);  
+    MyPanel.HideControl(F("Pressure1")); 
+    myMotor4Sh2->setSpeed(airpumpspvar);
+    myMotor4Sh2->run(FORWARD);
+      }
+
+      if (bottlepressureposiactualvar >= 6){
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (50);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    MyPanel.ShowControl(F("Pressure2"));
+    myMotor2Sh2->run(RELEASE);
+    }
+      else {
+     analogWrite (10, 0);
+    analogWrite (29, 0);  
+    MyPanel.HideControl(F("Pressure2")); 
+    myMotor2Sh2->setSpeed(airpumpspvar);
+    myMotor2Sh2->run(FORWARD);
+      }
+
+//--------------
+
+    MyPanel.SetNumber(F("OD-1"), CurrentOD);
+    MyPanel.SetNumber(F("OD-2"), CurrentOD1);
+    MyPanel.SetNumber(F("OD1-OD2"), curOD1OD2);
+
+    MyPanel.SetNumber(F("OD-3"), CurrentOD2);
+    MyPanel.SetNumber(F("OD-4"), CurrentOD3);
+    MyPanel.SetNumber(F("OD3-OD4"), curOD3OD4);
+
+    MyPanel.SetNumber(F("OD1-OD3"), curOD1OD3);
+    MyPanel.SetNumber(F("Diff-OD1-OD2"), curdiffOD1OD3);
+
+
+    if (Celcius <= (temperaturesetvar - 0.4)){
+      if ((currentMillis - previousMillistemp) >= 7000){ 
+    analogWrite (30, 2000);
+    analogWrite (40, 2000);
+    myMotor1Sh2->setSpeed(190);
+    myMotor1Sh2->run(FORWARD);
+      }
+    }
+    else if (Celcius >= (temperaturesetvar)) {
+    analogWrite (30, 0);
+    analogWrite (40, 0);
+    myMotor1Sh2->setSpeed(50);
+    myMotor1Sh2->run(FORWARD);
+    previousMillistemp = currentMillis;
+    }
+
+    if (Celcius >= (temperaturesetvar+2)|| Celcius <= (temperaturesetvar-2)){
+      if ((currentMillis - previousMillistemp2) >= 60000){ 
+     analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (200);
+    analogWrite (10, 0);
+    analogWrite (29, 0); 
+    MyPanel.ShowControl(F("temperatureupsign1"));
+    MyPanel.ShowControl(F("temperaturedownsign1"));
+    }
+    }
+
+else {
+     analogWrite (10, 0);
+    analogWrite (29, 0); 
+     MyPanel.HideControl(F("temperatureupsign1"));
+    MyPanel.HideControl(F("temperaturedownsign1"));
+    previousMillistemp2 = currentMillis;  
+    
+      }
+
+    
+  WAterbathlevel= analogRead(A11);
+
+    if (WAterbathlevel <= 5){
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (50);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    MyPanel.ShowControl(F("wblevelsign1"));
+    }
+      else {
+     analogWrite (10, 0);
+    analogWrite (29, 0);  
+    MyPanel.HideControl(F("wblevelsign1")); 
+      }
+    
+    wdt_reset();
+    wdt_disable();
+    wdt_enable(WDTO_2S);  
+    //--------------------------------
+    //--------------Flow sensor ------------------------
+
+  // count++;
+
+    //if (currentMillis4 - previousMillisflowsens >= 1100) {
+     // flowRate = (count * 2.25);        //Take counted pulses in the last second and multiply by 2.25mL 
+    //flowRate = flowRate * 60;         //Convert seconds to minutes, giving you mL / Minute
+    //flowRate = flowRate / 1000;       //Convert mL to Liters, giving you Liters / Minute
+
+   // MyPanel.SetNumber(F("airflowactualval"), flowRate);
+   //count = 0; 
+   //previousMillisflowsens = currentMillis4;  
+   // }
+
+//--------------time for waste and feed--------------
+
+timewastework= ((((PUMPONV*Multiplyvar)+PUMPOFFV)*3600000 )- (PUMPOFFV*3600000))/ 3600000 ;                 //become min april-2-2020
+timefeedwork=  (((PUMPONV+PUMPOFFV)*3600000) - (((PUMPONV*Multiplyvar)+PUMPOFFV)*3600000))/ 3600000;        //become min april-2-2020
+
+timewasteinminvar = timewastework * 60;                                                                     //become Sec april-2-2020
+timefeedinminvar = timefeedwork * 60;                                                                       //become Sec april-2-2020
+
+calfeedinmlvar= PUMPONmlVar;
+calwasteinmlvar= (PUMPONmlVar * timewasteinminvar)/ timefeedinminvar;
+
+MyPanel.SetNumber(F("timefeedworkval"), timefeedwork);
+MyPanel.SetNumber(F("timewasteworkval"), timewastework);
+
+MyPanel.SetNumber(F("timefeedinminval"), timefeedinminvar);
+MyPanel.SetNumber(F("timewasteinminval"), timewasteinminvar);
+
+MyPanel.SetNumber(F("calfeedinmlval"), calfeedinmlvar);
+MyPanel.SetNumber(F("calwasteinmlval"), calwasteinmlvar);
+
+//------------------------------------------------
+ 
+    if (CurrentOD >= ODMIN) {
+            ODVarT1 = currentMillis2;
+    }
+    // wait and check the correct od measurements (wait 100 round)
+    if (CurrentOD <= ODMAX) {
+       ODVarT4 =ODVarT4 +1;
+   }
+    else {
+     ODVarT4 =0;
+    }
+    if (ODVarT4 >= 100) {
+          ODVarT2 = currentMillis2;
+            ODVarT4 =0;
+    }
+    ODVarT3= ((ODVarT2 - ODVarT1)/3600000);
+    MyPanel.SetNumber(F("DiffOD"), ODVarT3);
+    TimePlot ODR2("Time-Dif=");
+    ODR2.SendData("Time-Dif=", ODVarT3);
+    
+    PulseUVNow =readuvOFF2;
+    readuvOFF2= readuvOFF2 + readuvOFF;
+    if (currentMillis3 - previousMillis5 >= (UVMUT*60000)) {
+    analogWrite (A2, UVOFF);
+    }
+    
+    if (currentMillis3 - previousMillis5 >= ((UVMUT*60000)+5000)) {
+     analogWrite (A2, 0);
+     PulseUVNow = 0;
+     readuvOFF2 = 0;
+     previousMillis5 = currentMillis3; 
+       }
+    
+    Timediff1= currentMillis - previousMillis6;
+    Countdownhr= ((Timediff2 - Timediff1)/3600000);
+         wdt_reset();
+    wdt_disable(); 
+
+wdt_enable(WDTO_2S);
+    
+    if ((currentMillis - previousMillis) < ((PUMPOFFVall*0.6)*3600000)) {
+    
+    
+    MyPanel.HideControl(F("Arrow1"));
+    MyPanel.HideControl(F("Arrow2"));
+
+
+//simulation operation------------------------
+    MyPanel.HideControl(F("Feedsimu1"));
+    MyPanel.HideControl(F("Feedsimu2"));
+    MyPanel.HideControl(F("wastesimu1"));
+    MyPanel.HideControl(F("wastesimu2"));
+    MyPanel.HideControl(F("loopsimu1"));
+    MyPanel.HideControl(F("loopsimu2"));
+    MyPanel.HideControl(F("combinsimu1"));
+    MyPanel.HideControl(F("combinsimu2"));
+    MyPanel.HideControl(F("combinsimu3"));
+    MyPanel.HideControl(F("combinsimu4"));
+//-------------------------------------------
+
+    
+    myMotor1->run(RELEASE);
+    myMotor2->run(RELEASE);
+    myMotor1Sh3->run(RELEASE);
+    myMotor2Sh3->run(RELEASE);
+    digitalWrite(22,LOW);
+    digitalWrite(23,LOW);
+    digitalWrite(24,LOW);
+    digitalWrite(25,LOW);
+     
+    Countdownsec= 60 - second();
+    Countdownmin= 60 - (minute()+1);
+    MyPanel.SetNumber(F("TtoNext"), Countdownhr);
+    MyPanel.SetNumber(F("TtoNext2"),Countdownmin);
+    MyPanel.SetNumber(F("TtoNext3"),Countdownsec );   
+       }
+         wdt_reset();
+   wdt_disable();
+
+//----------------Combination commands---------------------------------------------------------------------------   
+wdt_enable(WDTO_4S);
+if ((PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4) > 45) {
+MyPanel.DisableControl(F("Entercombvalbu")); 
+}
+else 
+{
+  MyPanel.EnableControl(F("Entercombvalbu")); 
+}
+
+
+wdt_enable(WDTO_2S);
+if  (PuONCombVar1>0) {
+
+if  ((currentMillis - previousMillis) <= (((PUMPOFFVall*0.6)+(PuONCombminVar1))*3600000) && (currentMillis - previousMillis) >= ((PUMPOFFVall*0.6)*3600000) ) {
+ 
+    myMotor1Sh1->setSpeed(250);
+    myMotor1Sh1->run(FORWARD);
+    myFile.println("combination[1]-Hr=");
+    myFile.print(Countdownhr);
+     MyPanel.ShowControl(F("combinsimu1"));
+}
+
+
+
+if ((currentMillis - previousMillis) > (((PUMPOFFVall*0.6)+(PuONCombminVar1))*3600000)) {
+   myMotor1Sh1->run(RELEASE); 
+   MyPanel.HideControl(F("combinsimu1"));
+}
+}
+else {
+   myMotor1Sh1->run(RELEASE); 
+   MyPanel.HideControl(F("combinsimu1"));
+}
+
+
+if  (PuONCombVar2>0)  {
+if ((currentMillis - previousMillis) <= (((PUMPOFFVall*0.6)+(PuONCombminVar2))*3600000) && (currentMillis - previousMillis) >= ((PUMPOFFVall*0.6)*3600000) ) {
+    myMotor2Sh1->setSpeed(250);
+    myMotor2Sh1->run(FORWARD);
+    myFile.println("combination[1]-Hr=");
+    myFile.print(Countdownhr);
+    MyPanel.ShowControl(F("combinsimu2"));
+}
+
+
+if ((currentMillis - previousMillis) > (((PUMPOFFVall*0.6)+(PuONCombminVar2))*3600000)) {
+ myMotor2Sh1->run(RELEASE);
+ MyPanel.HideControl(F("combinsimu2"));
+}
+
+}
+
+else {
+
+   myMotor2Sh1->run(RELEASE);
+ MyPanel.HideControl(F("combinsimu2"));
+}
+
+
+
+if  (PuONCombVar3>0)  {
+if ((currentMillis - previousMillis) <= (((PUMPOFFVall*0.6)+(PuONCombminVar3))*3600000)&& (currentMillis - previousMillis) >= ((PUMPOFFVall*0.6)*3600000)) {
+    myMotor3Sh1->setSpeed(250);
+    myMotor3Sh1->run(FORWARD);
+    myFile.println("combination[1]-Hr=");
+    myFile.print(Countdownhr);
+    MyPanel.ShowControl(F("combinsimu3"));
+}
+
+
+
+if ((currentMillis - previousMillis) > (((PUMPOFFVall*0.6)+(PuONCombminVar3))*3600000)) {
+    myMotor3Sh1->run(RELEASE);
+    MyPanel.HideControl(F("combinsimu3"));
+}
+}
+
+else { 
+    myMotor3Sh1->run(RELEASE);
+    MyPanel.HideControl(F("combinsimu3"));
+  
+}
+
+
+
+if  (PuONCombVar4>0)  {
+if ((currentMillis - previousMillis) <= (((PUMPOFFVall*0.6)+ (PuONCombminVar4))*3600000) && (currentMillis - previousMillis) >= ((PUMPOFFVall*0.6)*3600000)) {
+    myMotor4Sh1->setSpeed(250);
+    myMotor4Sh1->run(FORWARD);
+    myFile.println("combination[1]-Hr=");
+    myFile.print(Countdownhr);
+    MyPanel.ShowControl(F("combinsimu4"));
+}
+
+
+
+
+
+if ((currentMillis - previousMillis) > (((PUMPOFFVall*0.6)+ (PuONCombminVar4))*3600000)) {
+   myMotor4Sh1->run(RELEASE);
+   MyPanel.HideControl(F("combinsimu4"));
+}
+}
+else {
+   myMotor4Sh1->run(RELEASE);
+   MyPanel.HideControl(F("combinsimu4"));
+  
+}
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------
+    if ((currentMillis - previousMillis) <(((PUMPONV3*Multiplyvar)+PUMPOFFVall)*3600000) && (currentMillis - previousMillis) > (PUMPOFFVall*3600000)) {
+    previousMillis6 = currentMillis;
+    MyPanel.ShowControl(F("Arrow2"));
+    digitalWrite(22,LOW);
+    digitalWrite(23,LOW);
+    digitalWrite(24,LOW);
+    digitalWrite(25,LOW);
+    myMotor2->setSpeed(FLOWINMIN);
+    myMotor2->run(BACKWARD);
+    myMotor2Sh3->setSpeed(FLOWINMIN);
+    myMotor2Sh3->run(BACKWARD);
+    MyPanel.ShowControl(F("wastesimu1"));
+    MyPanel.ShowControl(F("wastesimu2"));
+
+       }
+   wdt_reset();
+   wdt_disable();
+   wdt_enable(WDTO_2S);
+
+    if ((currentMillis - previousMillis2) >=(((PUMPONV3*Multiplyvar)+PUMPOFFVall)*3600000)) {
+   
+    myMotor2->run(RELEASE);
+    myMotor2Sh3->run(RELEASE);
+     MyPanel.HideControl(F("wastesimu1"));
+    MyPanel.HideControl(F("wastesimu2"));
+    
+    MyPanel.HideControl(F("Arrow2"));
+    MyPanel.ShowControl(F("Arrow1"));
+    myMotor1->setSpeed(FLOWINMIN);
+    myMotor1->run(FORWARD);
+    myMotor1Sh3->setSpeed(FLOWINMIN);
+    myMotor1Sh3->run(FORWARD);
+
+      MyPanel.ShowControl(F("Feedsimu1"));
+    MyPanel.ShowControl(F("Feedsimu2"));
+    digitalWrite(22,LOW);
+    digitalWrite(23,LOW);
+    digitalWrite(24,LOW);
+    digitalWrite(25,LOW);
+    previousMilliscombination = currentMillis;
+    previousMilliscombination1 = currentMillis;
+    previousMilliscombination2 = currentMillis;
+    previousMilliscombination3 = currentMillis;
+
+       }   
+    wdt_reset();
+    wdt_disable();
+
+    if ((currentMillis - previousMillis) >= ((PUMPONV3+PUMPOFFVall)*3600000)) {
+    MyPanel.HideControl(F("Arrow1"));
+    MyPanel.HideControl(F("Arrow2"));  
+    
+    myMotor1->setSpeed(220);
+    myMotor1->run(BACKWARD);
+    myMotor1Sh3->setSpeed(220);
+    myMotor1Sh3->run(BACKWARD);
+    MyPanel.HideControl(F("Arrow4"));
+    MyPanel.ShowControl(F("Arrow0"));
+    MyPanel.HideControl(F("Arrow0"));
+    MyPanel.ShowControl(F("Arrow4"));
+    delay(300);
+    myMotor1->run(RELEASE);
+    myMotor1Sh3->run(RELEASE);
+
+    MyPanel.HideControl(F("Feedsimu1"));
+    MyPanel.HideControl(F("Feedsimu2"));
+    digitalWrite(22,LOW);
+    digitalWrite(23,LOW);
+    digitalWrite(24,LOW);
+    digitalWrite(25,LOW);
+    myMotor2->setSpeed(220);
+    myMotor2->run(BACKWARD);
+    myMotor2Sh3->setSpeed(220);
+    myMotor2Sh3->run(BACKWARD);
+    MyPanel.ShowControl(F("backwardwaste1"));
+    MyPanel.ShowControl(F("backwardwaste2"));
+    MyPanel.HideControl(F("Arrow3"));
+    MyPanel.ShowControl(F("Arrow2"));
+    delay(300);
+    myMotor2->run(RELEASE);
+    myMotor2Sh3->run(RELEASE);
+    digitalWrite(22,LOW);
+    digitalWrite(23,LOW);
+    digitalWrite(24,LOW);
+    digitalWrite(25,LOW);
+    MyPanel.HideControl(F("backwardwaste1"));
+    MyPanel.HideControl(F("backwardwaste2"));
+    MyPanel.ShowControl(F("Arrow3"));
+    MyPanel.HideControl(F("Arrow2"));
+    previousMillis = currentMillis;
+    previousMillis2 = currentMillis;
+    previousMilliscombination = currentMillis;
+    previousMilliscombination1 = currentMillis;
+    previousMilliscombination2 = currentMillis;
+    previousMilliscombination3 = currentMillis;
+       }
+    
+    wdt_enable(WDTO_4S);    
+       if (currentMillis3 - previousMillisLOOP1 < (OFFLOOPINTVAR*60000)) { 
+    myMotor3->run(RELEASE); 
+    myMotor3Sh3->run(RELEASE); 
+       }
+      else if (currentMillis3 - previousMillisLOOP1 < ((OFFLOOPINTVAR+ONLOOPINTVAR)*60000)) {
+    
+    myMotor3->setSpeed(FLOWINMAX);
+    myMotor3->run(FORWARD);
+    myMotor3Sh3->setSpeed(FLOWINMAX);
+    myMotor3Sh3->run(FORWARD);
+    MyPanel.ShowControl(F("loopsimu1"));
+    MyPanel.ShowControl(F("loopsimu2"));
+    if (currentMillis3 - previousMillis3>= (ODREADSS*1000)) {
+    
+    MyPanel.SetNumber(F("ODshow"), analogRead(A0));
+    MyPanel.SetNumber(F("Pointer"), analogRead(A0));
+        MyPanel.SetNumber(F("OD-1"), analogRead(A0));
+        MyPanel.SetNumber(F("OD-2"), analogRead(A1));
+        MyPanel.SetNumber(F("OD-3"), analogRead(A14));
+        MyPanel.SetNumber(F("OD-4"), analogRead(A15));
+   
+    TimePlot ODR2("OD1-OD2=");
+    TimePlot ODR3("OD3-OD4=");
+    TimePlot ODR5("OD1-OD3=");
+    TimePlot ODR6("Diff:OD1-OD3=");
+
+    
+    TimePlot ODR4("Pressure1-2");
+    ODR2.SendData("OD1-OD2=", curOD1OD2);
+    ODR3.SendData("OD3-OD4=", curOD3OD4);
+    ODR4.SendData("Pressure1-2", analogRead(A0));
+    ODR5.SendData("OD1-OD3=", curOD1OD3);
+    ODR6.SendData("Diff:OD1-OD3=", curdiffOD1OD3);
+
+    MyPanel.ShowControl(F("Arrow3"));
+
+      MyCSVMessage.Begin();
+      Serial.print("Reactor No-1");
+      Serial.print(",");
+      Serial.print(millis());
+      Serial.print(",");
+      Serial.print("Current OD=");
+      Serial.print(",");
+      Serial.print(analogRead(A0));
+      Serial.print(",");
+      Serial.print("Current OD1=");
+      Serial.print(",");
+      Serial.print(analogRead(A1));
+      Serial.print(",");
+      Serial.print("Current OD2=");
+      Serial.print(",");
+      Serial.print(analogRead(A14));
+      Serial.print(",");
+      Serial.print("Current OD3=");
+      Serial.print(",");
+      Serial.print(analogRead(A15));
+      Serial.print(",");
+      Serial.print("OD1-OD2=");
+      Serial.print(",");
+      Serial.print(curOD1OD2);
+      Serial.print(",");
+      Serial.print("OD3-OD4=");
+      Serial.print(",");
+      Serial.print(curOD3OD4);
+      Serial.print(",");
+      Serial.print("OD1-OD3=");
+      Serial.print(",");
+      Serial.print(curOD1OD3);
+      Serial.print(",");
+      Serial.print("Diff:OD1-OD3=");
+      Serial.print(",");
+      Serial.print(curdiffOD1OD3);
+      Serial.print(",");
+      Serial.print("Pressure1-2");
+      Serial.print(",");
+      Serial.print(analogRead(A3));
+      Serial.print(",");
+      Serial.print("Temp");
+      Serial.print(",");
+      Serial.print(Celcius);
+      Serial.print(",");
+      Serial.print("Stirr");
+      Serial.print(",");
+      Serial.print(Stirvar);
+      Serial.print(",");
+      Serial.print("Time-Cut-down");
+      Serial.print(",");
+      Serial.print(Countdownhr);
+      Serial.print(",");
+      Serial.print("Incubation period");
+      Serial.print(",");
+      Serial.print(PUMPOFFV);
+      Serial.print(",");
+      Serial.print("Volume feed in=");
+      Serial.print(",");
+      Serial.print(PUMPONV);
+      Serial.print(",");
+      Serial.print("Time-DIFF=");
+      Serial.print(",");
+      Serial.print(ODVarT3);
+      Serial.print(",");
+      Serial.print("Pump speed");
+      Serial.print(",");
+      Serial.print(FLOWINMIN);
+      Serial.print(",");
+      Serial.print("LOOP SPEED");
+      Serial.print(",");
+      Serial.print(FLOWINMAX);
+      Serial.print(",");
+      Serial.print("UV-pulses rate");
+      Serial.print(",");
+      Serial.print(UVMUT);
+      Serial.print(",");
+      Serial.print("UV-PULSE");
+      Serial.print(",");
+      Serial.print(PulseUVNow);
+      Serial.print(",");
+      Serial.print("OD Adjust MAX");
+      Serial.print(",");
+      Serial.print(ODMAX);
+      Serial.print(",");
+      Serial.print("OD Adjust MIN");
+      Serial.print(",");
+      Serial.print(ODMIN);
+      Serial.print(",");
+      Serial.print("Program used=");
+      Serial.print(",");
+      Serial.print(ProcessStatus);
+      Serial.print(",");
+      Serial.print("Day No=");
+      Serial.print(",");
+      Serial.print(day());
+      Serial.print(",");
+      Serial.print("Hour=");
+      Serial.print(",");
+      Serial.print(hour());
+      Serial.print(",");
+      Serial.print("Combination-sub1");
+      Serial.print(",");
+      Serial.print(PuONCombmlVar1);
+      Serial.print(",");
+      Serial.print("Combination-sub2");
+      Serial.print(",");
+      Serial.print(PuONCombmlVar2);
+      Serial.print(",");
+      Serial.print("Combination-sub3");
+      Serial.print(",");
+      Serial.print(PuONCombmlVar3);
+      Serial.print(",");
+      Serial.print("Combination-sub4");
+      Serial.print(",");
+      Serial.print(PuONCombmlVar4);
+      Serial.print(",");
+      MyCSVMessage.End();
+
+      previousMillis3=currentMillis3;
+       }
+       }
+    
+       if (currentMillis3 - previousMillisLOOP1 >= ((OFFLOOPINTVAR+ONLOOPINTVAR)*60000)) {
+    
+    myMotor3->setSpeed(FLOWINMAX);
+    myMotor3->run(BACKWARD);
+    myMotor3Sh3->setSpeed(FLOWINMAX);
+    myMotor3Sh3->run(BACKWARD);
+       }
+
+       if (currentMillis3 - previousMillisLOOP1 >= ((OFFLOOPINTVAR+ONLOOPINTVAR+REVLOOPINTVAR)*60000)) {
+    
+    myMotor3->run(RELEASE);
+    myMotor3Sh3->run(RELEASE);
+      MyPanel.HideControl(F("loopsimu1"));
+    MyPanel.HideControl(F("loopsimu2"));
+     
+    previousMillisLOOP1 = currentMillis3; 
+       }
+       wdt_reset();
+wdt_disable();
+
+    }
+    //--------------------------------------------------------------------------------------------
+
+  
+//----------------------------------------------------------------- 
+    
+    void showtime(){
+      wdt_enable(WDTO_4S);
+        RTC.get(rtc,true);
+       {
+        Serial.print( rtc[6]);   /*YEAR MONTH DATE*/
+        Serial.print("-");
+        Serial.print( rtc[5]);
+        Serial.print("-");
+        Serial.println( rtc[4]);
+    
+        Serial.print( rtc[2]); /*HOUR  MIN SEC */
+        Serial.print(":");
+        Serial.print( rtc[1]);
+        Serial.print(":");
+        Serial.println( rtc[0]);
+    
+        Serial.println( str[rtc[3]-1]); /********WEEK*****/
+        Serial.println("**********");
+        }
+           wdt_reset();
+wdt_disable();
+       }
+ //******************************************************************************************
+ //******************************************************************************************            
+    void setup() {
+    Serial.begin(9600); 
+    sensors.begin();
+    Wire.begin();
+    SD.begin();
+   EmptyODval=600; 
+    if(updata_flag)
+      { Serial.println(" OldTime:  ");
+       showtime();
+        RTC.stop();
+        RTC.set(DS1307_SEC,TIME_SEC); //---Update time----
+        RTC.set(DS1307_MIN,TIME_MIN);
+        RTC.set(DS1307_HR,TIME_HR);
+        RTC.set(DS1307_DOW,TIME_DOW);
+        RTC.set(DS1307_DATE,TIME_DATE);
+        RTC.set(DS1307_MTH,TIME_MTH);
+        RTC.set(DS1307_YR,TIME_YR);
+        RTC.start();
+        Serial.println(" SetTime:  ");
+        showtime();
+       }
+
+    pinMode(22, OUTPUT);
+    pinMode(23, OUTPUT);
+    pinMode(24, OUTPUT);
+    pinMode(25, OUTPUT);
+    pinMode(26, OUTPUT);
+    pinMode(10, OUTPUT);
+    pinMode(29, OUTPUT);
+    pinMode(30, OUTPUT); //Heater (1):
+    pinMode(40, OUTPUT); //Heater (2):
+    pinMode(A11, INPUT);
+    pinMode(33, OUTPUT);
+    pinMode(34, OUTPUT);
+    pinMode(35, OUTPUT);
+    pinMode(36, OUTPUT);
+    pinMode(9, OUTPUT);
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    analogWrite (9, 0);
+    delay (500);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    temperaturesetvar=38;
+    Stirvar=50;
+    Waterbathpumpvar=20;
+    analogWrite (22, 0);
+    Multiplyvar=0.7; 
+    rpmfeedvar=24;
+    FLOWINMAX = 100;
+    FLOWINMIN = 250;      
+    SerialCommandHandler.AddCommand(F("Auto"), Cmd_Auto);
+    SerialCommandHandler.AddCommand(F("Manual"), Cmd_Manual);
+    SerialCommandHandler.AddCommand(F("Go"), Cmd_Move1);
+    SerialCommandHandler.AddCommand(F("Stop"), Cmd_AllStop);
+    SerialCommandHandler.AddCommand(F("Refresh"), Cmd_Refresh);
+    SerialCommandHandler.AddCommand(F("GetODMAX"), Cmd_GetODMAX);
+    SerialCommandHandler.AddCommand(F("PUMPDELAYON"), Cmd_PUMPON);
+    SerialCommandHandler.AddCommand(F("PUMPDELAYOFF"), Cmd_PUMPOFF);
+    SerialCommandHandler.AddCommand(F("FLOWMAXV"), Cmd_FLOWMAXV);
+    SerialCommandHandler.AddCommand(F("FLOWMINV"), Cmd_FLOWMINV);
+    SerialCommandHandler.AddCommand(F("FLOWADDINV"), Cmd_FLOWADDINV);
+    SerialCommandHandler.AddCommand(F("StopOption"), Cmd_STOPOPTION);
+    SerialCommandHandler.AddCommand(F("MANAUTO"), Cmd_MANAUTO);
+    //SerialCommandHandler.AddCommand(F("Sampling--check"), Cmd_Samplingcheck);
+    //SerialCommandHandler.AddCommand(F("Sam--Now"), Cmd_SamNow);
+    //SerialCommandHandler.AddCommand(F("Sam--Count"), Cmd_SamCount);
+    //SerialCommandHandler.AddCommand(F("Samplingval"), Cmd_Samplingval);
+    SerialCommandHandler.AddCommand(F("Feed-BDown"), Cmd_FeedBDown);
+    SerialCommandHandler.AddCommand(F("FWValueBB"), Cmd_FWValueBB);
+    SerialCommandHandler.AddCommand(F("Waste-BDown"), Cmd_WasteBDown);
+    SerialCommandHandler.AddCommand(F("Initialfeed"), Cmd_Initialfeed);
+    SerialCommandHandler.AddCommand(F("Loop-Stop"), Cmd_LoopStop);
+    SerialCommandHandler.AddCommand(F("UV--HR"), Cmd_UVHR);
+    //SerialCommandHandler.AddCommand(F("TurnOF--Samp"), Cmd_TurnOFSamp);
+    SerialCommandHandler.AddCommand(F("ODREADS"), Cmd_ODREADS);
+    //SerialCommandHandler.AddCommand(F("Delay-samp"), Cmd_Delaysamp);
+    SerialCommandHandler.AddCommand(F("Report-Refresh"), Cmd_ReportRefresh);
+    SerialCommandHandler.AddCommand(F("Reverse-Waste"), Cmd_ReverseWaste);
+    //SerialCommandHandler.AddCommand(F("ContinousF"), Cmd_ContinousF); 
+    SerialCommandHandler.AddCommand(F("feedspeedcont"), Cmd_feedspeedcont);
+    SerialCommandHandler.AddCommand(F("Conttimestopinterval"), Cmd_Conttimestopinterval);
+    SerialCommandHandler.AddCommand(F("VolumerestMIN"), Cmd_VolumerestMIN);
+    SerialCommandHandler.AddCommand(F("VolumerestHR"), Cmd_VolumerestHR);
+    SerialCommandHandler.AddCommand(F("OFFLOOPINTsent"), Cmd_OFFLOOPINTsent);
+    SerialCommandHandler.AddCommand(F("ONLOOPINTsent"), Cmd_ONLOOPINTsent);
+    SerialCommandHandler.AddCommand(F("REVLOOPINTsent"), Cmd_REVLOOPINTsent);
+    //SerialCommandHandler.AddCommand(F("samamount"), Cmd_samamount);
+    //SerialCommandHandler.AddCommand(F("samcleaning"), Cmd_samcleaning);
+    //SerialCommandHandler.AddCommand(F("samcleaningnow"), Cmd_samcleaningnow);
+    SerialCommandHandler.AddCommand(F("Stirring"), Cmd_Stirring);
+    //Combination system serial orders
+    SerialCommandHandler.AddCommand(F("PuOFFComb1"), Cmd_PuOFFComb1);
+    SerialCommandHandler.AddCommand(F("PuONComb1"), Cmd_PuONComb1);
+    SerialCommandHandler.AddCommand(F("PuSpeedComb1"), Cmd_PuSpeedComb1);
+    SerialCommandHandler.AddCommand(F("PuOFFComb2"), Cmd_PuOFFComb2);
+    SerialCommandHandler.AddCommand(F("PuONComb2"), Cmd_PuONComb2);
+    SerialCommandHandler.AddCommand(F("PuSpeedComb2"), Cmd_PuSpeedComb2);
+    SerialCommandHandler.AddCommand(F("PuOFFComb3"), Cmd_PuOFFComb3);
+    SerialCommandHandler.AddCommand(F("PuONComb3"), Cmd_PuONComb3);
+    SerialCommandHandler.AddCommand(F("PuSpeedComb3"), Cmd_PuSpeedComb3);
+    SerialCommandHandler.AddCommand(F("PuOFFComb4"), Cmd_PuOFFComb4);
+    SerialCommandHandler.AddCommand(F("PuONComb4"), Cmd_PuONComb4);
+    SerialCommandHandler.AddCommand(F("PuSpeedComb4"), Cmd_PuSpeedComb4);
+    SerialCommandHandler.AddCommand(F("Temperaturenter"), Cmd_Temperaturenter);
+
+
+SerialCommandHandler.AddCommand(F("PuONCombml1"), Cmd_PuONCombml1);
+SerialCommandHandler.AddCommand(F("PuONCombml2"), Cmd_PuONCombml2);
+SerialCommandHandler.AddCommand(F("PuONCombml3"), Cmd_PuONCombml3);
+SerialCommandHandler.AddCommand(F("PuONCombml4"), Cmd_PuONCombml4);
+
+SerialCommandHandler.AddCommand(F("entercomvalues"), Cmd_entercomvalues);
+
+
+    
+    //Pump Manual cntrol 
+    SerialCommandHandler.AddCommand(F("feedstartmanope"), Cmd_feedstartmanope);
+    SerialCommandHandler.AddCommand(F("feedstopmanope"), Cmd_feedstopmanope);
+    SerialCommandHandler.AddCommand(F("feedrevmanope"), Cmd_feedrevmanope);
+    SerialCommandHandler.AddCommand(F("wastestartmanope"), Cmd_wastestartmanope);
+    SerialCommandHandler.AddCommand(F("wastestopmanope"), Cmd_wastestopmanope);
+    SerialCommandHandler.AddCommand(F("wasterevmanope"), Cmd_wasterevmanope);
+
+    SerialCommandHandler.AddCommand(F("feed2startmanope"), Cmd_feed2startmanope);
+    SerialCommandHandler.AddCommand(F("feed2stopmanope"), Cmd_feed2stopmanope);
+    SerialCommandHandler.AddCommand(F("feed2revmanope"), Cmd_feed2revmanope);
+    SerialCommandHandler.AddCommand(F("waste2startmanope"), Cmd_waste2startmanope);
+    SerialCommandHandler.AddCommand(F("waste2stopmanope"), Cmd_waste2stopmanope);
+    SerialCommandHandler.AddCommand(F("waste2revmanope"), Cmd_waste2revmanope);
+
+    
+    SerialCommandHandler.AddCommand(F("comp1startmanope"), Cmd_comp1startmanope);
+    SerialCommandHandler.AddCommand(F("comp1stopmanope"), Cmd_comp1stopmanope);
+    SerialCommandHandler.AddCommand(F("comp1revmanope"), Cmd_comp1revmanope);
+    SerialCommandHandler.AddCommand(F("comp2startmanope"), Cmd_comp2startmanope);
+    SerialCommandHandler.AddCommand(F("comp2stopmanope"), Cmd_comp2stopmanope);
+    SerialCommandHandler.AddCommand(F("comp2revmanope"), Cmd_comp2revmanope);
+    SerialCommandHandler.AddCommand(F("comp3startmanope"), Cmd_comp3startmanope);
+    SerialCommandHandler.AddCommand(F("comp3stopmanope"), Cmd_comp3stopmanope);
+    SerialCommandHandler.AddCommand(F("comp3revmanope"), Cmd_comp3revmanope);
+    SerialCommandHandler.AddCommand(F("comp4startmanope"), Cmd_comp4startmanope);
+    SerialCommandHandler.AddCommand(F("comp4stopmanope"), Cmd_comp4stopmanope);
+    SerialCommandHandler.AddCommand(F("comp4revmanope"), Cmd_comp4revmanope);
+    SerialCommandHandler.AddCommand(F("switch1ONmanope"), Cmd_switch1ONmanope);
+    SerialCommandHandler.AddCommand(F("switch1OFFmanope"), Cmd_switch1OFFmanope);
+    SerialCommandHandler.AddCommand(F("switch2ONmanope"), Cmd_switch2ONmanope);
+    SerialCommandHandler.AddCommand(F("switch2OFFmanope"), Cmd_switch2OFFmanope);
+    SerialCommandHandler.AddCommand(F("bathpump"), Cmd_bathpump);
+    SerialCommandHandler.AddCommand(F("Multiplyvalenter"), Cmd_Multiplyvalenter);
+    SerialCommandHandler.AddCommand(F("ODBASELINE"), Cmd_ODBASELINE);
+    SerialCommandHandler.AddCommand(F("airpumpspenter"), Cmd_airpumpspenter);
+    SerialCommandHandler.AddCommand(F("airflowsetenter"), Cmd_airflowsetenter);
+    SerialCommandHandler.AddCommand(F("bottlepressuresetenter"), Cmd_bottlepressuresetenter);
+    SerialCommandHandler.AddCommand(F("rpmfeedenter"), Cmd_rpmfeedenter);
+    SerialCommandHandler.AddCommand(F("PUMPDELAYONml"), Cmd_PUMPDELAYONml);
+    SerialCommandHandler.AddCommand(F("PUMPDELAYOFFmin"), Cmd_PUMPDELAYOFFmin);
+
+
+// Calibration commands
+SerialCommandHandler.AddCommand(F("onfeed1calmin"), Cmd_onfeed1calmin);
+SerialCommandHandler.AddCommand(F("onfeed2calmin"), Cmd_onfeed2calmin);
+SerialCommandHandler.AddCommand(F("onwaste1calmin"), Cmd_onwaste1calmin);
+SerialCommandHandler.AddCommand(F("onwaste2calmin"), Cmd_onwaste2calmin);
+SerialCommandHandler.AddCommand(F("onloop1calmin"), Cmd_onloop1calmin);
+SerialCommandHandler.AddCommand(F("onloop2calmin"), Cmd_onloop2calmin);
+SerialCommandHandler.AddCommand(F("oncomp1calmin"), Cmd_oncomp1calmin);
+SerialCommandHandler.AddCommand(F("oncomp2calmin"), Cmd_oncomp2calmin);
+SerialCommandHandler.AddCommand(F("oncomp3calmin"), Cmd_oncomp3calmin);
+SerialCommandHandler.AddCommand(F("oncomp4calmin"), Cmd_oncomp4calmin);
+
+SerialCommandHandler.AddCommand(F("onfeed1calminml"), Cmd_onfeed1calminml);
+SerialCommandHandler.AddCommand(F("onfeed2calminml"), Cmd_onfeed2calminml);
+SerialCommandHandler.AddCommand(F("onwaste1calminml"), Cmd_onwaste1calminml);
+SerialCommandHandler.AddCommand(F("onwaste2calminml"), Cmd_onwaste2calminml);
+SerialCommandHandler.AddCommand(F("onloop1calminml"), Cmd_onloop1calminml);
+SerialCommandHandler.AddCommand(F("onloop2calminml"), Cmd_onloop2calminml);
+SerialCommandHandler.AddCommand(F("oncomp1calminml"), Cmd_oncomp1calminml);
+SerialCommandHandler.AddCommand(F("oncomp2calminml"), Cmd_oncomp2calminml);
+SerialCommandHandler.AddCommand(F("oncomp3calminml"), Cmd_oncomp3calminml);
+SerialCommandHandler.AddCommand(F("oncomp4calminml"), Cmd_oncomp4calminml);
+
+
+SerialCommandHandler.AddCommand(F("onfeed1calsec"), Cmd_onfeed1calsec);
+SerialCommandHandler.AddCommand(F("onfeed2calsec"), Cmd_onfeed2calsec);
+SerialCommandHandler.AddCommand(F("onwaste1calsec"), Cmd_onwaste1calsec);
+SerialCommandHandler.AddCommand(F("onwaste2calsec"), Cmd_onwaste2calsec);
+SerialCommandHandler.AddCommand(F("onloop1calsec"), Cmd_onloop1calsec);
+SerialCommandHandler.AddCommand(F("onloop2calsec "), Cmd_onloop2calsec);
+SerialCommandHandler.AddCommand(F("oncomp1calsec"), Cmd_oncomp1calsec);
+SerialCommandHandler.AddCommand(F("oncomp2calsec"), Cmd_oncomp2calsec);
+SerialCommandHandler.AddCommand(F("oncomp3calsec"), Cmd_oncomp3calsec);
+SerialCommandHandler.AddCommand(F("oncomp4calsec"), Cmd_oncomp4calsec);
+
+SerialCommandHandler.AddCommand(F("onfeed1calsecml"), Cmd_onfeed1calsecml);
+SerialCommandHandler.AddCommand(F("onfeed2calsecml"), Cmd_onfeed2calsecml);
+SerialCommandHandler.AddCommand(F("onwaste1calsecml"), Cmd_onwaste1calsecml);
+SerialCommandHandler.AddCommand(F("onwaste2calsecml"), Cmd_onwaste2calsecml);
+SerialCommandHandler.AddCommand(F("onloop1calsecml"), Cmd_onloop1calsecml);
+SerialCommandHandler.AddCommand(F("onloop2calsecml"), Cmd_onloop2calsecml);
+SerialCommandHandler.AddCommand(F("oncomp1calsecml"), Cmd_oncomp1calsecml);
+SerialCommandHandler.AddCommand(F("oncomp2calsecml"), Cmd_oncomp2calsecml);
+SerialCommandHandler.AddCommand(F("oncomp3calsecml"), Cmd_oncomp3calsecml);
+SerialCommandHandler.AddCommand(F("oncomp4calsecml"), Cmd_oncomp4calsecml);
+
+
+
+SerialCommandHandler.AddCommand(F("mlfeedinghowmany"), Cmd_mlfeedinghowmany);
+//---------------------------------------------
+
+
+
+
+
+
+    MyPanel.EnableControl(F("cali1delaymin"));
+    MyPanel.EnableControl(F("cali2delaymin"));
+    MyPanel.EnableControl(F("cali3delaymin"));
+    MyPanel.EnableControl(F("cali4delaymin"));
+    MyPanel.EnableControl(F("cali5delaymin"));
+    MyPanel.EnableControl(F("cali6delaymin"));
+    MyPanel.EnableControl(F("cali7delaymin"));
+    MyPanel.EnableControl(F("cali8delaymin"));
+    MyPanel.EnableControl(F("cali9delaymin"));
+    MyPanel.EnableControl(F("cali10delaymin"));
+    MyPanel.EnableControl(F("cali1delaysec"));
+    MyPanel.EnableControl(F("cali2delaysec"));
+    MyPanel.EnableControl(F("cali3delaysec"));
+    MyPanel.EnableControl(F("cali4delaysec"));
+    MyPanel.EnableControl(F("cali5delaysec"));
+    MyPanel.EnableControl(F("cali6delaysec"));
+    MyPanel.EnableControl(F("cali7delaysec"));
+    MyPanel.EnableControl(F("cali8delaysec"));
+    MyPanel.EnableControl(F("cali9delaysec"));
+    MyPanel.EnableControl(F("cali10delaysec"));
+    MyPanel.HideControl(F("ONSgin"));
+
+
+
+
+
+    MyPanel.HideControl(F("Arrow1"));
+    MyPanel.HideControl(F("Arrow2"));
+    MyPanel.HideControl(F("Arrow3"));
+    MyPanel.HideControl(F("Arrow0"));
+    AFMS.begin();
+      myMotor1-> run(FORWARD);
+      myMotor2-> run(FORWARD);
+      myMotor3-> run(FORWARD);
+      myMotor4-> run(FORWARD);
+
+      myMotor1-> run(RELEASE);
+      myMotor2-> run(RELEASE);
+      myMotor3-> run(RELEASE);
+      myMotor4-> run(RELEASE);
+
+    AFMS1.begin();
+      myMotor1Sh1-> run(FORWARD);
+      myMotor2Sh1-> run(FORWARD);
+      myMotor3Sh1-> run(FORWARD);
+      myMotor4Sh1-> run(FORWARD);
+
+      myMotor1Sh1-> run(RELEASE);
+      myMotor2Sh1-> run(RELEASE);
+      myMotor3Sh1-> run(RELEASE);
+      myMotor4Sh1-> run(RELEASE);
+
+    AFMS2.begin();
+      myMotor1Sh2-> run(FORWARD);
+      myMotor2Sh2-> run(FORWARD);
+      myMotor3Sh2-> run(FORWARD);
+      myMotor4Sh2-> run(FORWARD);
+
+      myMotor1Sh2-> run(RELEASE);
+      myMotor2Sh2-> run(RELEASE);
+      myMotor3Sh2-> run(RELEASE);
+      myMotor4Sh2-> run(RELEASE);
+
+    AFMS3.begin();
+      myMotor1Sh3-> run(FORWARD);
+      myMotor2Sh3-> run(FORWARD);
+      myMotor3Sh3-> run(FORWARD);
+      myMotor4Sh3-> run(FORWARD);
+
+      myMotor1Sh3-> run(RELEASE);
+      myMotor2Sh3-> run(RELEASE);
+      myMotor3Sh3-> run(RELEASE);
+      myMotor4Sh3-> run(RELEASE);
+      
+    MyPanel.SetCheck(F("Stopoption"), true);
+    MyPanel.EnableControl(F("Autocheck"));
+    MyPanel.EnableControl(F("Manualcheck"));
+    MyPanel.EnableControl(F("MAN-AUTO"));
+    MyPanel.ShowControl(F("Start"));
+    MyPanel.ShowControl(F("ALLSTOP"));
+    MyPanel.SetText(F("Switch"), "RD");
+    MyPanel.SetText(F("Number"), "3");
+    MyPanel.SetBackColor(F("Switch"), F("yellow"));
+    pinMode(pinCS, OUTPUT);
+    myMotor3Sh2->setSpeed(Waterbathpumpvar);
+    myMotor3Sh2->run(FORWARD);
+    myMotor1Sh2->setSpeed(70);
+    myMotor1Sh2->run(FORWARD);
+    Stopoption();
+    }
+    
+    void(* resetFunc) (void) = 0; //declare reset function @ address 0
+    void Stopoption(){
+     MyPanel.DisableControl(F("INMAXVAL"));
+    MyPanel.DisableControl(F("INMINVAL"));
+    MyPanel.DisableControl(F("ADDINVAL"));
+    MyPanel.DisableControl(F("PUMPOFFVAL"));
+    MyPanel.DisableControl(F("PUMPONVAL"));
+    MyPanel.DisableControl(F("ODMAXVAL"));
+    MyPanel.DisableControl(F("PUMPONBUT"));
+    MyPanel.DisableControl(F("PUMPOFFBUT"));
+    MyPanel.DisableControl(F("INMAX"));
+    MyPanel.DisableControl(F("INMIN"));
+    MyPanel.DisableControl(F("ADDIN"));
+    MyPanel.DisableControl(F("ODMAX")); 
+    }
+    
+    void loop()
+    {
+    uint8_t i;
+      SerialCommandHandler.Process();
+    
+    unsigned long currentMillis = millis();
+    
+    //if(updata_flag==0)
+    //     showtime();    //Output data from serial port
+    
+      //R:0-255 G:0-255 B:0-255   
+      
+bottlepressureactualvar = analogRead (A8);
+
+if ((PuONCombmlVar1+PuONCombmlVar2+PuONCombmlVar3+PuONCombmlVar4) > 45) {
+MyPanel.DisableControl(F("Entercombvalbu")); 
+}
+else 
+{
+  MyPanel.EnableControl(F("Entercombvalbu")); 
+}
+
+
+
+    MyPanel.SetNumber(F("ODshow"), 0);
+    
+    MyPanel.SetNumber(F("Pointer"), 0);
+    
+    TimePlot ODR2("ODR2=");
+    ODR2.SendData("ODR2=",0);
+    
+    
+      MyCSVMessage.Begin();
+      Serial.print(millis()/3600000);
+      Serial.print(",");
+      Serial.print("0");
+      Serial.print(",");
+      Serial.print("water level");
+      Serial.print(WAterbathlevel);
+      MyCSVMessage.End();
+    delay(1000);
+    
+    sensors.requestTemperatures(); 
+    Celcius=sensors.getTempCByIndex(0);
+    MyPanel.SetNumber(F("Temperatureactual"), Celcius);
+    
+    if (Celcius <= (temperaturesetvar - 0.4)){
+      if ((currentMillis - previousMillistemp) >= 7000){ 
+    analogWrite (30, 2000);
+    analogWrite (40, 2000);
+    myMotor1Sh2->setSpeed(190);
+    myMotor1Sh2->run(FORWARD);
+      }
+    }
+    else if (Celcius >= (temperaturesetvar)) {
+    analogWrite (30, 0);
+    analogWrite (40, 0);
+    myMotor1Sh2->setSpeed(50);
+    myMotor1Sh2->run(FORWARD);
+    previousMillistemp = currentMillis;
+    }
+
+    if (Celcius >= (temperaturesetvar+2)|| Celcius <= (temperaturesetvar-2)){
+      if ((currentMillis - previousMillistemp2) >= 60000){ 
+     analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (200);
+    analogWrite (10, 0);
+    analogWrite (29, 0); 
+    MyPanel.ShowControl(F("temperatureupsign1"));
+    MyPanel.ShowControl(F("temperaturedownsign1"));
+    }
+    }
+
+else {
+     analogWrite (10, 0);
+    analogWrite (29, 0); 
+     MyPanel.HideControl(F("temperatureupsign1"));
+    MyPanel.HideControl(F("temperaturedownsign1"));
+    previousMillistemp2 = currentMillis;  
+    
+      }
+    
+  WAterbathlevel= analogRead(A11);
+
+    if (WAterbathlevel <= 5){
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (50);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    MyPanel.ShowControl(F("wblevelsign1"));
+    }
+      else {
+     analogWrite (10, 0);
+    analogWrite (29, 0);   
+    MyPanel.HideControl(F("wblevelsign1"));
+      }
+      }   
+
+      
+      
+      void Cmd_AllStop(CommandParameter &p)
+    {
+    
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (1000);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    delay (100);
+    analogWrite (10, 2000);
+    analogWrite (29, 2000);
+    delay (1000);
+    analogWrite (10, 0);
+    analogWrite (29, 0);
+    delay (100);
+    ProcessStatus=0;
+    resetFunc(); 
+    
+    MyPanel.EnableControl(F("Initialfeedbut"));     
+    MyPanel.SetBackColor(F("Switch"), F("red"));
+    MyPanel.SetText(F("Switch"), "OFF");
+    MyPanel.SetCheck(F("Manualcheck"), false);
+    MyPanel.SetCheck(F("Autocheck"), false);
+    MyPanel.SetCheck(F("MAN-AUTO"), false);
+    MyPanel.SetCheck(F("Stopoption"), true);
+    MyPanel.HideControl(F("Arrow1"));
+    MyPanel.HideControl(F("Arrow2"));
+    MyPanel.HideControl(F("Arrow3"));
+    resetFunc(); 
+  
+    }
+    
+      void Cmd_Refresh(CommandParameter &p)
+    {
+    
+    MyPanel.ShowControl(F("Start"));
+    MyPanel.ShowControl(F("ALLSTOP"));
+    MyPanel.ShowControl(F("Switch"));
+    MyPanel.SetText(F("Number"), "3");
+    MyPanel.SetNumber(F("Statusshow"), ProcessStatus);
+    
+
+    while (Automaticcond1== 0){
+      SerialCommandHandler.Process();
+      Manualcond();
+      
+    MyPanel.SetNumber(F("PTime"), hour());
+    MyPanel.SetNumber(F("PTime2"), minute());
+    MyPanel.SetNumber(F("PTime3"), second());
+    MyPanel.SetNumber(F("PTime4"), day());
+    MyPanel.SetNumber(F("PTime5"), month());
+    
+    } 
+
+    }
